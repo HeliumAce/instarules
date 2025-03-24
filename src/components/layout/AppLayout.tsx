@@ -5,7 +5,7 @@ import AppSidebar from './AppSidebar';
 
 const AppLayout = () => {
   return (
-    <SidebarProvider>
+    <SidebarProvider defaultOpen={true}>
       <div className="flex min-h-screen w-full">
         <AppSidebar />
         <main className="flex-1 overflow-auto">
