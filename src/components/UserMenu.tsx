@@ -14,14 +14,16 @@ const UserMenu = () => {
   const { user, signOut, loading } = useAuth();
 
   if (loading) {
-    return <Button variant="ghost" size="sm" disabled>Loading...</Button>;
+    return <div className="flex items-center justify-center w-full py-2"><Button variant="ghost" size="sm" disabled className="w-full">Loading...</Button></div>;
   }
 
   if (!user) {
     return (
-      <Button variant="outline" size="sm" asChild>
-        <a href="/auth">Sign In</a>
-      </Button>
+      <div className="flex items-center justify-center w-full py-2">
+        <Button variant="outline" size="sm" asChild className="w-full">
+          <a href="/auth">Sign In</a>
+        </Button>
+      </div>
     );
   }
 
@@ -30,10 +32,11 @@ const UserMenu = () => {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" className="rounded-full">
+        <Button variant="ghost" className="w-full flex justify-start items-center gap-3 px-3 py-2 h-auto">
           <Avatar className="h-8 w-8">
             <AvatarFallback>{initials}</AvatarFallback>
           </Avatar>
+          <span className="truncate">{user.email}</span>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
