@@ -1,4 +1,3 @@
-
 import { useNavigate, useParams } from 'react-router-dom';
 import { Star, Home } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -34,15 +33,23 @@ const AppSidebar = () => {
 
   return (
     <Sidebar className="border-r border-border">
-      <SidebarHeader className={cn("px-4 py-3", isCollapsed && "flex justify-center items-center px-0")}>
-        <div className="flex items-center justify-between">
+      <SidebarHeader className="border-b border-border">
+        <div className={cn(
+          "flex items-center justify-between",
+          isCollapsed ? "p-2" : "px-4 py-3"
+        )}>
           <div className={cn("flex items-center gap-2", isCollapsed && "hidden")}>
             <span className="text-lg font-semibold text-white">Instarules</span>
           </div>
-          <SidebarTrigger />
+          <SidebarTrigger 
+            className={cn(
+              "p-2 rounded-md hover:bg-muted transition-colors",
+              isCollapsed && "w-full flex items-center justify-center"
+            )} 
+          />
         </div>
       </SidebarHeader>
-      <SidebarContent className="px-2">
+      <SidebarContent className={cn("px-2", isCollapsed && "hidden")}>
         <SidebarGroup>
           <SidebarMenu>
             <SidebarMenuItem>
@@ -136,7 +143,7 @@ const AppSidebar = () => {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-      <SidebarFooter className="mt-auto border-t border-border p-2">
+      <SidebarFooter className={cn("mt-auto border-t border-border p-2", isCollapsed && "hidden")}>
         <UserMenu />
       </SidebarFooter>
     </Sidebar>
