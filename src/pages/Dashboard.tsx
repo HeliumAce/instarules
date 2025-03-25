@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Star } from 'lucide-react';
@@ -42,12 +41,7 @@ const Dashboard = () => {
               className="group relative overflow-hidden rounded-xl bg-card transition-all hover-scale border-glow"
               onClick={() => navigate(`/games/${game.id}`)}
             >
-              <div className="relative aspect-[3/2] overflow-hidden">
-                <img
-                  src={game.coverImage}
-                  alt={game.title}
-                  className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-                />
+              <div className="relative aspect-[3/2] bg-card p-4">
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
@@ -60,9 +54,7 @@ const Dashboard = () => {
                 >
                   <Star size={16} fill={game.isFavorite ? "currentColor" : "none"} />
                 </button>
-              </div>
-              <div className="p-4">
-                <h3 className="mb-1 text-lg font-medium text-white">{game.title}</h3>
+                <h3 className="text-lg font-medium text-white">{game.title}</h3>
                 <p className="text-sm text-gray-400">{game.description}</p>
               </div>
             </div>
