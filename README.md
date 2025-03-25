@@ -1,69 +1,122 @@
-# Welcome to your Lovable project
 
-## Project info
+# Instarules - Board Game Rules Assistant
 
-**URL**: https://lovable.dev/projects/2f710b84-1fd2-4fd3-a049-6b8fb4822be1
+Instarules is a web application that provides instant access to board game rules and answers to common questions without consulting rulebooks. This application allows users to browse games and get instant answers about rules and gameplay.
 
-## How can I edit this code?
+## Features
 
-There are several ways of editing your application.
+- User authentication (sign up, sign in, sign out)
+- Browse available board games
+- Access game rules and get answers to game-related questions
+- Favorite games for quick access
 
-**Use Lovable**
+## Tech Stack
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/2f710b84-1fd2-4fd3-a049-6b8fb4822be1) and start prompting.
+- **Frontend**: React, TypeScript, Vite
+- **UI Components**: shadcn/ui, Tailwind CSS
+- **State Management**: React Context API, TanStack Query
+- **Authentication**: Supabase Auth
+- **Database**: Supabase PostgreSQL
+- **Routing**: React Router
 
-Changes made via Lovable will be committed automatically to this repo.
+## Getting Started
 
-**Use your preferred IDE**
+### Prerequisites
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+- Node.js (v16 or higher)
+- npm or yarn
+- Git
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+### Installation
 
-Follow these steps:
+1. Clone the repository:
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+```bash
+git clone <repository-url>
+cd instarules
 ```
 
-**Edit a file directly in GitHub**
+2. Install dependencies:
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+```bash
+npm install
+# or
+yarn install
+```
 
-**Use GitHub Codespaces**
+3. Environment Setup:
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+Create a `.env` file in the root directory with the following variables:
 
-## What technologies are used for this project?
+```
+VITE_SUPABASE_URL=your_supabase_url
+VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+```
 
-This project is built with .
+To get these values:
+- Create a Supabase account and project at [supabase.com](https://supabase.com)
+- Navigate to Project Settings > API
+- Copy the URL and anon/public key
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+4. Start the development server:
 
-## How can I deploy this project?
+```bash
+npm run dev
+# or
+yarn dev
+```
 
-Simply open [Lovable](https://lovable.dev/projects/2f710b84-1fd2-4fd3-a049-6b8fb4822be1) and click on Share -> Publish.
+The application will be available at `http://localhost:8080`.
 
-## I want to use a custom domain - is that possible?
+## Project Structure
 
-We don't support custom domains (yet). If you want to deploy your project under your own domain then we recommend using Netlify. Visit our docs for more details: [Custom domains](https://docs.lovable.dev/tips-tricks/custom-domain/)
+```
+src/
+├── components/          # Reusable UI components
+│   ├── layout/          # Layout components
+│   └── ui/              # shadcn/ui components
+├── context/             # React context providers
+├── data/                # Static data and mock data
+├── hooks/               # Custom React hooks
+├── integrations/        # Third-party integrations (Supabase)
+├── lib/                 # Utility functions
+├── pages/               # Page components
+└── types/               # TypeScript type definitions
+```
+
+## Development Workflow
+
+1. Create a new branch for your feature or bug fix
+2. Make your changes
+3. Test your changes locally
+4. Create a pull request
+5. After review, merge into the main branch
+
+## Deployment
+
+The application can be deployed using any static site hosting service (Netlify, Vercel, etc.).
+
+To build the application for production:
+
+```bash
+npm run build
+# or
+yarn build
+```
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## Acknowledgments
+
+- Built with [Lovable](https://lovable.dev)
+- UI components from [shadcn/ui](https://ui.shadcn.com/)
