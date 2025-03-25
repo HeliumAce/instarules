@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect } from 'react';
 import { useParams, Navigate } from 'react-router-dom';
 import { SendHorizontal } from 'lucide-react';
@@ -81,8 +80,20 @@ const GameChat = () => {
         <h1 className="text-xl font-semibold text-white">{game.title} Rules</h1>
       </header>
 
-      <div className="flex-1 overflow-y-auto p-4">
-        <div className="mx-auto max-w-3xl space-y-6">
+      <div className="flex-1 overflow-y-auto flex flex-col-reverse p-4">
+        <div className="mx-auto max-w-3xl space-y-6 px-4 flex flex-col-reverse">
+          <div ref={messagesEndRef} />
+          {isTyping && (
+            <div className="flex justify-start">
+              <div className="w-full rounded-xl bg-muted p-4">
+                <div className="flex space-x-2">
+                  <div className="h-2 w-2 animate-pulse rounded-full bg-foreground"></div>
+                  <div className="h-2 w-2 animate-pulse rounded-full bg-foreground animation-delay-200"></div>
+                  <div className="h-2 w-2 animate-pulse rounded-full bg-foreground animation-delay-400"></div>
+                </div>
+              </div>
+            </div>
+          )}
           {messages.map((message) => (
             <div
               key={message.id}
@@ -90,7 +101,7 @@ const GameChat = () => {
             >
               <div
                 className={cn(
-                  "max-w-[80%] rounded-xl p-4",
+                  "w-full rounded-xl p-4",
                   message.isUser
                     ? "bg-accent/90 text-white"
                     : "bg-muted text-foreground"
@@ -100,33 +111,25 @@ const GameChat = () => {
               </div>
             </div>
           ))}
-
-          {isTyping && (
-            <div className="flex justify-start">
-              <div className="max-w-[80%] rounded-xl bg-muted p-4">
-                <div className="flex space-x-2">
-                  <div className="h-2 w-2 animate-pulse rounded-full bg-foreground"></div>
-                  <div className="h-2 w-2 animate-pulse rounded-full bg-foreground animation-delay-200"></div>
-                  <div className="h-2 w-2 animate-pulse rounded-full bg-foreground animation-delay-400"></div>
-                </div>
-              </div>
-            </div>
-          )}
-          <div ref={messagesEndRef} />
         </div>
       </div>
 
       <footer className="border-t border-border bg-background p-4">
         <form onSubmit={handleSubmit} className="mx-auto max-w-3xl">
-          <div className="flex items-center gap-2">
+          <div className="relative flex items-center">
             <Input
               value={input}
               onChange={(e) => setInput(e.target.value)}
               placeholder="Ask about rules, setup, or gameplay..."
-              className="flex-1 bg-muted text-foreground"
+              className="flex-1 bg-muted text-foreground pr-12"
               disabled={isTyping}
             />
-            <Button type="submit" disabled={isTyping || !input.trim()} className="px-3">
+            <Button 
+              type="submit" 
+              disabled={isTyping || !input.trim()} 
+              className="absolute right-2 p-2 h-auto"
+              variant="ghost"
+            >
               <SendHorizontal size={18} />
             </Button>
           </div>
