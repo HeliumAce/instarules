@@ -1,7 +1,30 @@
-
 import { Game } from '@/types/game';
 
 export const gameData: Game[] = [
+  {
+    id: "arcs",
+    title: "Arcs",
+    description: "Lead a spacefaring society through an epic saga of survival and power at the galaxy's edge.",
+    isFavorite: false
+  },
+  {
+    id: "radlands",
+    title: "Radlands",
+    description: "A post-apocalyptic dueling card game where you protect your camps and destroy your opponent's.",
+    isFavorite: false
+  },
+  {
+    id: "bohnanza",
+    title: "Bohnanza",
+    description: "Plant, trade, and harvest beans in this unique card game where hand order matters.",
+    isFavorite: false
+  },
+  {
+    id: "modern-art",
+    title: "Modern Art",
+    description: "Become an art dealer, auction paintings, and manipulate the art market to make the most money.",
+    isFavorite: false
+  },
   {
     id: "catan",
     title: "Catan",
