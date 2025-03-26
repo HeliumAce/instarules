@@ -1,4 +1,5 @@
-import { useNavigate, useParams } from 'react-router-dom';
+import { useState } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Star, Home } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useGameContext } from '@/context/GameContext';
@@ -20,16 +21,21 @@ import {
 
 const AppSidebar = () => {
   const navigate = useNavigate();
-  const { gameId } = useParams();
-  const { games, favoriteGames, toggleFavorite } = useGameContext();
+  const location = useLocation();
+  const { games, toggleFavorite } = useGameContext();
   const { state } = useSidebar();
-
-  const handleFavorite = (e: React.MouseEvent, id: string) => {
-    e.stopPropagation();
-    toggleFavorite(id);
-  };
+  
+  // Separate games into favorites and non-favorites
+  const favoriteGames = games.filter(game => game.isFavorite);
+  const nonFavoriteGames = games.filter(game => !game.isFavorite);
 
   const isCollapsed = state === "collapsed";
+
+  // Helper function to check if a game is currently selected
+  const isGameSelected = (gameId: string) => {
+    return location.pathname === `/games/${gameId}` || 
+           location.pathname === `/games/${gameId}/chat`;
+  };
 
   return (
     <Sidebar className="border-r border-border">
@@ -57,7 +63,7 @@ const AppSidebar = () => {
                 asChild
                 className={cn(
                   "transition-all flex items-center gap-3 rounded-md px-3 py-2 hover:bg-muted",
-                  !gameId && "bg-accent bg-opacity-10"
+                  location.pathname === '/' && "bg-accent text-accent-foreground"
                 )}
                 tooltip="Dashboard"
               >
@@ -83,21 +89,28 @@ const AppSidebar = () => {
                 {favoriteGames.map((game) => (
                   <SidebarMenuItem key={game.id}>
                     <SidebarMenuButton
-                      asChild
+                      isActive={isGameSelected(game.id)}
                       className={cn(
-                        "flex items-center justify-between rounded-md px-3 py-2 hover:bg-muted",
-                        gameId === game.id && "bg-accent bg-opacity-10"
+                        "transition-all",
+                        isGameSelected(game.id) && "bg-accent text-accent-foreground"
                       )}
-                      tooltip={game.title}
+                      onClick={() => navigate(`/games/${game.id}`)}
                     >
-                      <button onClick={() => navigate(`/games/${game.id}`)}>
-                        <span className="flex-1 truncate text-left">{game.title}</span>
-                        <button
-                          onClick={(e) => handleFavorite(e, game.id)}
-                          className="ml-2 text-yellow-400 hover:text-yellow-500"
-                        >
-                          <Star size={16} fill="currentColor" />
-                        </button>
+                      <span className="flex-1 truncate text-left">{game.title}</span>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleFavorite(game.id);
+                        }}
+                        className={cn(
+                          "ml-2",
+                          game.isFavorite ? "text-yellow-400" : "text-gray-400 hover:text-gray-300"
+                        )}
+                      >
+                        <Star
+                          size={16}
+                          fill={game.isFavorite ? "currentColor" : "none"}
+                        />
                       </button>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
@@ -111,30 +124,31 @@ const AppSidebar = () => {
           <SidebarGroupLabel>All Games</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {games.map((game) => (
+              {nonFavoriteGames.map((game) => (
                 <SidebarMenuItem key={game.id}>
                   <SidebarMenuButton
-                    asChild
+                    isActive={isGameSelected(game.id)}
                     className={cn(
-                      "flex items-center justify-between rounded-md px-3 py-2 hover:bg-muted",
-                      gameId === game.id && "bg-accent bg-opacity-10"
+                      "transition-all",
+                      isGameSelected(game.id) && "bg-accent text-accent-foreground"
                     )}
-                    tooltip={game.title}
+                    onClick={() => navigate(`/games/${game.id}`)}
                   >
-                    <button onClick={() => navigate(`/games/${game.id}`)}>
-                      <span className="flex-1 truncate text-left">{game.title}</span>
-                      <button
-                        onClick={(e) => handleFavorite(e, game.id)}
-                        className={cn(
-                          "ml-2",
-                          game.isFavorite ? "text-yellow-400" : "text-gray-400 hover:text-gray-300"
-                        )}
-                      >
-                        <Star
-                          size={16}
-                          fill={game.isFavorite ? "currentColor" : "none"}
-                        />
-                      </button>
+                    <span className="flex-1 truncate text-left">{game.title}</span>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleFavorite(game.id);
+                      }}
+                      className={cn(
+                        "ml-2",
+                        game.isFavorite ? "text-yellow-400" : "text-gray-400 hover:text-gray-300"
+                      )}
+                    >
+                      <Star
+                        size={16}
+                        fill={game.isFavorite ? "currentColor" : "none"}
+                      />
                     </button>
                   </SidebarMenuButton>
                 </SidebarMenuItem>

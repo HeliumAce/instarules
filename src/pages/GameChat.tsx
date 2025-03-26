@@ -1,11 +1,12 @@
 import { useState, useRef, useEffect } from 'react';
 import { useParams, Navigate } from 'react-router-dom';
-import { SendHorizontal } from 'lucide-react';
+import { SendHorizontal, Loader2 } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useGameContext } from '@/context/GameContext';
 import { Message } from '@/types/game';
-import { getGameResponse } from '@/data/games';
+import { useGameRules } from '@/hooks/useGameRules';
 
 const GameChat = () => {
   const { gameId } = useParams<{ gameId: string }>();
@@ -15,6 +16,7 @@ const GameChat = () => {
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const { askQuestion, loading, error } = useGameRules(gameId || '');
 
   useEffect(() => {
     // Add welcome message when component mounts
@@ -42,10 +44,6 @@ const GameChat = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  const generateResponse = (query: string): string => {
-    return getGameResponse(gameId!, query);
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim()) return;
@@ -61,17 +59,34 @@ const GameChat = () => {
     setInput('');
     setIsTyping(true);
 
-    // Simulate AI response with delay
-    setTimeout(() => {
+    try {
+      console.log('Sending question to RAG system:', input);
+      // Use OpenRouter through our hook
+      const response = await askQuestion(input);
+      console.log('Received response from RAG system:', response);
+      
       const aiResponse: Message = {
         id: (Date.now() + 1).toString(),
-        content: generateResponse(input),
+        content: response,
         isUser: false,
         timestamp: new Date(),
       };
+      
       setMessages((prev) => [...prev, aiResponse]);
+    } catch (error) {
+      console.error('Error getting response:', error);
+      
+      const errorMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        content: "Sorry, I couldn't process your question. Please try again.",
+        isUser: false,
+        timestamp: new Date(),
+      };
+      
+      setMessages((prev) => [...prev, errorMessage]);
+    } finally {
       setIsTyping(false);
-    }, 1000);
+    }
   };
 
   return (
@@ -80,20 +95,8 @@ const GameChat = () => {
         <h1 className="text-xl font-semibold text-white">{game.title} Rules</h1>
       </header>
 
-      <div className="flex-1 overflow-y-auto flex flex-col-reverse p-4">
-        <div className="mx-auto max-w-3xl space-y-6 px-4 flex flex-col-reverse">
-          <div ref={messagesEndRef} />
-          {isTyping && (
-            <div className="flex justify-start">
-              <div className="w-full rounded-xl bg-muted p-4">
-                <div className="flex space-x-2">
-                  <div className="h-2 w-2 animate-pulse rounded-full bg-foreground"></div>
-                  <div className="h-2 w-2 animate-pulse rounded-full bg-foreground animation-delay-200"></div>
-                  <div className="h-2 w-2 animate-pulse rounded-full bg-foreground animation-delay-400"></div>
-                </div>
-              </div>
-            </div>
-          )}
+      <div className="flex-1 overflow-y-auto flex flex-col justify-end p-4">
+        <div className="mx-auto max-w-3xl space-y-6 px-4 w-full">
           {messages.map((message) => (
             <div
               key={message.id}
@@ -107,10 +110,32 @@ const GameChat = () => {
                     : "bg-muted text-foreground"
                 )}
               >
-                <p className="text-sm md:text-base">{message.content}</p>
+                {message.isUser ? (
+                  <p className="text-sm md:text-base">{message.content}</p>
+                ) : (
+                  <div className="text-sm md:text-base prose prose-invert max-w-none">
+                    <ReactMarkdown>
+                      {message.content}
+                    </ReactMarkdown>
+                  </div>
+                )}
               </div>
             </div>
           ))}
+          
+          {isTyping && (
+            <div className="flex justify-start">
+              <div className="w-full rounded-xl bg-muted p-4">
+                <div className="flex space-x-2">
+                  <div className="h-2 w-2 animate-pulse rounded-full bg-foreground"></div>
+                  <div className="h-2 w-2 animate-pulse rounded-full bg-foreground animation-delay-200"></div>
+                  <div className="h-2 w-2 animate-pulse rounded-full bg-foreground animation-delay-400"></div>
+                </div>
+              </div>
+            </div>
+          )}
+          
+          <div ref={messagesEndRef} />
         </div>
       </div>
 
@@ -120,7 +145,7 @@ const GameChat = () => {
             <Input
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="Ask about rules, setup, or gameplay..."
+              placeholder={isTyping ? "Processing your question..." : "Ask about rules, setup, or gameplay..."}
               className="flex-1 bg-muted text-foreground pr-12"
               disabled={isTyping}
             />
@@ -130,7 +155,11 @@ const GameChat = () => {
               className="absolute right-2 p-2 h-auto"
               variant="ghost"
             >
-              <SendHorizontal size={18} />
+              {isTyping ? (
+                <Loader2 size={18} className="animate-spin" />
+              ) : (
+                <SendHorizontal size={18} />
+              )}
             </Button>
           </div>
         </form>
