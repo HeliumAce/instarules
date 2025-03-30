@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
@@ -33,7 +32,7 @@ const Auth = () => {
 
   // Redirect if already authenticated
   if (!loading && user) {
-    return <Navigate to="/" />;
+    return <Navigate to="/dashboard" />;
   }
 
   const onSubmit = async (data: FormData) => {

@@ -1,5 +1,4 @@
-
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useContext, useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -21,38 +20,56 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const isInitialMount = useRef(true);
+  const lastExpiresAt = useRef<number | null>(null);
 
   useEffect(() => {
-    // Set up auth state listener first
+    // Check for existing session first
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+      if (session) {
+        lastExpiresAt.current = session.expires_at;
+      }
+      setLoading(false);
+    });
+
+    // Then set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
         
-        if (event === 'SIGNED_IN') {
-          toast({
-            title: "Welcome back!",
-            description: "You have successfully signed in.",
-          });
-          navigate('/');
-        }
-        
-        if (event === 'SIGNED_OUT') {
-          toast({
-            title: "Signed out",
-            description: "You have been signed out successfully.",
-          });
-          navigate('/auth');
+        // Only handle navigation and show toast for actual auth events
+        if (!isInitialMount.current) {
+          // Check if this is a real session change or just a visibility change
+          const isRealSessionChange = session?.expires_at !== lastExpiresAt.current;
+          
+          if (event === 'SIGNED_IN' && isRealSessionChange) {
+            lastExpiresAt.current = session?.expires_at ?? null;
+            toast({
+              title: "Welcome back!",
+              description: "You have successfully signed in.",
+            });
+            navigate('/dashboard');
+          }
+          
+          if (event === 'SIGNED_OUT') {
+            lastExpiresAt.current = null;
+            toast({
+              title: "Signed out",
+              description: "You have been signed out successfully.",
+            });
+            navigate('/auth');
+          }
+        } else {
+          if (session) {
+            lastExpiresAt.current = session.expires_at;
+          }
+          isInitialMount.current = false;
         }
       }
     );
-
-    // Then check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
-    });
 
     return () => subscription.unsubscribe();
   }, [navigate]);

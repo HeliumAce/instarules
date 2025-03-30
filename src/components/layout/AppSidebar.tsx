@@ -63,11 +63,11 @@ const AppSidebar = () => {
                 asChild
                 className={cn(
                   "transition-all flex items-center gap-3 rounded-md px-3 py-2 hover:bg-muted",
-                  location.pathname === '/' && "bg-accent text-accent-foreground"
+                  location.pathname === '/dashboard' && "bg-accent text-accent-foreground"
                 )}
                 tooltip="Dashboard"
               >
-                <button onClick={() => navigate('/')}>
+                <button onClick={() => navigate('/dashboard')}>
                   <Home size={18} />
                   <span>Dashboard</span>
                 </button>
