@@ -21,12 +21,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const isInitialMount = useRef(true);
+  const lastExpiresAt = useRef<number | null>(null);
 
   useEffect(() => {
     // Check for existing session first
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
+      if (session) {
+        lastExpiresAt.current = session.expires_at;
+      }
       setLoading(false);
     });
 
@@ -36,9 +40,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setSession(session);
         setUser(session?.user ?? null);
         
-        // Only handle navigation and show toast for actual auth events, not initial mount
+        // Only handle navigation and show toast for actual auth events
         if (!isInitialMount.current) {
-          if (event === 'SIGNED_IN') {
+          // Check if this is a real session change or just a visibility change
+          const isRealSessionChange = session?.expires_at !== lastExpiresAt.current;
+          
+          if (event === 'SIGNED_IN' && isRealSessionChange) {
+            lastExpiresAt.current = session?.expires_at ?? null;
             toast({
               title: "Welcome back!",
               description: "You have successfully signed in.",
@@ -47,6 +55,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           }
           
           if (event === 'SIGNED_OUT') {
+            lastExpiresAt.current = null;
             toast({
               title: "Signed out",
               description: "You have been signed out successfully.",
@@ -54,6 +63,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             navigate('/auth');
           }
         } else {
+          if (session) {
+            lastExpiresAt.current = session.expires_at;
+          }
           isInitialMount.current = false;
         }
       }
