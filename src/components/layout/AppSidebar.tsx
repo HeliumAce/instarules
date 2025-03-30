@@ -79,10 +79,7 @@ const AppSidebar = () => {
         {favoriteGames.length > 0 && (
           <SidebarGroup>
             <SidebarGroupLabel>
-              <div className="flex items-center gap-2">
-                <Star size={16} className="text-yellow-400" />
-                <span>Favorites</span>
-              </div>
+              Favorites
             </SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
