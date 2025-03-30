@@ -95,47 +95,51 @@ const GameChat = () => {
         <h1 className="text-xl font-semibold text-white">{game.title} Rules</h1>
       </header>
 
-      <div className="flex-1 overflow-y-auto flex flex-col justify-end p-4">
-        <div className="mx-auto max-w-3xl space-y-6 px-4 w-full">
-          {messages.map((message) => (
-            <div
-              key={message.id}
-              className={`flex ${message.isUser ? 'justify-end' : 'justify-start'}`}
-            >
+      {/* Main chat container with reverse scroll */}
+      <div className="flex-1 overflow-y-auto">
+        {/* Inner container to maintain bottom alignment and proper spacing */}
+        <div className="flex min-h-full flex-col justify-end">
+          <div className="mx-auto max-w-3xl space-y-6 px-4 w-full py-4">
+            {messages.map((message) => (
               <div
-                className={cn(
-                  "w-full rounded-xl p-4",
-                  message.isUser
-                    ? "bg-accent/90 text-white"
-                    : "bg-muted text-foreground"
-                )}
+                key={message.id}
+                className={`flex ${message.isUser ? 'justify-end' : 'justify-start'}`}
               >
-                {message.isUser ? (
-                  <p className="text-sm md:text-base">{message.content}</p>
-                ) : (
-                  <div className="text-sm md:text-base prose prose-invert max-w-none">
-                    <ReactMarkdown>
-                      {message.content}
-                    </ReactMarkdown>
-                  </div>
-                )}
-              </div>
-            </div>
-          ))}
-          
-          {isTyping && (
-            <div className="flex justify-start">
-              <div className="w-full rounded-xl bg-muted p-4">
-                <div className="flex space-x-2">
-                  <div className="h-2 w-2 animate-pulse rounded-full bg-foreground"></div>
-                  <div className="h-2 w-2 animate-pulse rounded-full bg-foreground animation-delay-200"></div>
-                  <div className="h-2 w-2 animate-pulse rounded-full bg-foreground animation-delay-400"></div>
+                <div
+                  className={cn(
+                    "w-full rounded-xl p-4",
+                    message.isUser
+                      ? "bg-accent/90 text-white"
+                      : "bg-muted text-foreground"
+                  )}
+                >
+                  {message.isUser ? (
+                    <p className="text-sm md:text-base">{message.content}</p>
+                  ) : (
+                    <div className="text-sm md:text-base prose prose-invert max-w-none">
+                      <ReactMarkdown>
+                        {message.content}
+                      </ReactMarkdown>
+                    </div>
+                  )}
                 </div>
               </div>
-            </div>
-          )}
-          
-          <div ref={messagesEndRef} />
+            ))}
+            
+            {isTyping && (
+              <div className="flex justify-start">
+                <div className="w-full rounded-xl bg-muted p-4">
+                  <div className="flex space-x-2">
+                    <div className="h-2 w-2 animate-pulse rounded-full bg-foreground"></div>
+                    <div className="h-2 w-2 animate-pulse rounded-full bg-foreground animation-delay-200"></div>
+                    <div className="h-2 w-2 animate-pulse rounded-full bg-foreground animation-delay-400"></div>
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            <div ref={messagesEndRef} />
+          </div>
         </div>
       </div>
 
