@@ -5,7 +5,7 @@ import { PanelLeft } from "lucide-react"
 
 import { useIsMobile } from "@/hooks/use-mobile"
 import { cn } from "@/lib/utils"
-import { Button } from "@/components/ui/button"
+import { Button, type ButtonProps } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
 import { Sheet, SheetContent } from "@/components/ui/sheet"
@@ -521,63 +521,45 @@ const sidebarMenuButtonVariants = cva(
   }
 )
 
+// Define the props type for SidebarMenuButton
+interface SidebarMenuButtonProps extends ButtonProps {
+  isActive?: boolean;
+  tooltip?: string;
+}
+
 const SidebarMenuButton = React.forwardRef<
-  HTMLButtonElement,
-  React.ComponentProps<"button"> & {
-    asChild?: boolean
-    isActive?: boolean
-    tooltip?: string | React.ComponentProps<typeof TooltipContent>
-  } & VariantProps<typeof sidebarMenuButtonVariants>
->(
-  (
-    {
-      asChild = false,
-      isActive = false,
-      variant = "default",
-      size = "default",
-      tooltip,
-      className,
-      ...props
-    },
-    ref
-  ) => {
-    const Comp = asChild ? Slot : "button"
-    const { isMobile, state } = useSidebar()
+  React.ElementRef<typeof Button>,
+  SidebarMenuButtonProps
+>(({ isActive, tooltip, className, children, ...props }, ref) => {
+  const { state } = useSidebar()
 
-    const button = (
-      <Comp
-        ref={ref}
-        data-sidebar="menu-button"
-        data-size={size}
-        data-active={isActive}
-        className={cn(sidebarMenuButtonVariants({ variant, size }), className)}
-        {...props}
-      />
-    )
-
-    if (!tooltip) {
-      return button
-    }
-
-    if (typeof tooltip === "string") {
-      tooltip = {
-        children: tooltip,
-      }
-    }
-
-    return (
+  return (
+    <TooltipProvider delayDuration={0}>
       <Tooltip>
-        <TooltipTrigger asChild>{button}</TooltipTrigger>
-        <TooltipContent
-          side="right"
-          align="center"
-          hidden={state !== "collapsed" || isMobile}
-          {...tooltip}
-        />
+        <TooltipTrigger asChild>
+          <Button
+            ref={ref}
+            data-active={isActive ? "true" : "false"}
+            variant="ghost"
+            className={cn(
+              "flex w-full items-center justify-start gap-2 rounded-md px-3 py-2 text-left text-sm font-medium transition-colors",
+              "hover:bg-muted",
+              "data-[active=true]:bg-accent data-[active=true]:text-accent-foreground",
+              className
+            )}
+            aria-current={isActive ? "page" : undefined}
+            {...props}
+          >
+            {children}
+          </Button>
+        </TooltipTrigger>
+        {state === "collapsed" && tooltip && (
+          <TooltipContent side="right">{tooltip}</TooltipContent>
+        )}
       </Tooltip>
-    )
-  }
-)
+    </TooltipProvider>
+  )
+})
 SidebarMenuButton.displayName = "SidebarMenuButton"
 
 const SidebarMenuAction = React.forwardRef<
