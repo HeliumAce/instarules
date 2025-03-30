@@ -30,7 +30,7 @@ class LLMService {
     }
     
     try {
-      const model = modelPreference || 'google/gemini-2.5-pro-exp-03-25:free';
+      const model = modelPreference || 'anthropic/claude-3-sonnet:beta';
       console.log('Using model:', model);
       
       console.log('Making API request to OpenRouter');
