@@ -7,30 +7,36 @@ import { Button } from '@/components/ui/button';
 import { useGameContext } from '@/context/GameContext';
 import { Message } from '@/types/game';
 import { useGameRules } from '@/hooks/useGameRules';
+import { useChatMessages } from '@/hooks/useChatMessages';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { ReloadIcon } from '@radix-ui/react-icons';
+import { useAuth } from '@/context/AuthContext';
 
 const GameChat = () => {
   const { gameId } = useParams<{ gameId: string }>();
   const { getGameById } = useGameContext();
+  const { user } = useAuth();
   const game = gameId ? getGameById(gameId) : undefined;
-  const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const { askQuestion, loading, error } = useGameRules(gameId || '');
+  const { askQuestion } = useGameRules(gameId || '');
+  const { messages, loading, error, saveMessage } = useChatMessages(gameId || '');
+  const welcomeShownRef = useRef(false);
 
   useEffect(() => {
-    // Add welcome message when component mounts
-    if (game) {
-      setMessages([
-        {
-          id: 'welcome',
-          content: `Welcome to the ${game.title} rules assistant! Ask any question about how to play.`,
-          isUser: false,
-          timestamp: new Date(),
-        },
-      ]);
-    }
-  }, [game]);
+    const showWelcomeMessage = async () => {
+      if (!welcomeShownRef.current && !loading && messages.length === 0 && game && user) {
+        welcomeShownRef.current = true;
+        await saveMessage(
+          `Hi! I'm your rules assistant for ${game.title}. Ask me any questions about the rules, setup, or gameplay.`,
+          false
+        );
+      }
+    };
+    
+    showWelcomeMessage();
+  }, [loading, messages.length, game, saveMessage, user]);
 
   useEffect(() => {
     scrollToBottom();
@@ -38,6 +44,10 @@ const GameChat = () => {
 
   if (!game) {
     return <Navigate to="/" />;
+  }
+
+  if (!user) {
+    return <Navigate to="/auth" />;
   }
 
   const scrollToBottom = () => {
@@ -48,42 +58,25 @@ const GameChat = () => {
     e.preventDefault();
     if (!input.trim()) return;
 
-    const userMessage: Message = {
-      id: Date.now().toString(),
-      content: input,
-      isUser: true,
-      timestamp: new Date(),
-    };
-
-    setMessages((prev) => [...prev, userMessage]);
-    setInput('');
-    setIsTyping(true);
-
     try {
-      console.log('Sending question to RAG system:', input);
-      // Use OpenRouter through our hook
+      // Save user message
+      await saveMessage(input, true);
+      setInput('');
+      setIsTyping(true);
+
+      // Get AI response
       const response = await askQuestion(input);
-      console.log('Received response from RAG system:', response);
       
-      const aiResponse: Message = {
-        id: (Date.now() + 1).toString(),
-        content: response,
-        isUser: false,
-        timestamp: new Date(),
-      };
-      
-      setMessages((prev) => [...prev, aiResponse]);
+      // Save AI response
+      await saveMessage(response, false);
     } catch (error) {
-      console.error('Error getting response:', error);
+      console.error('Error in chat interaction:', error);
       
-      const errorMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        content: "Sorry, I couldn't process your question. Please try again.",
-        isUser: false,
-        timestamp: new Date(),
-      };
-      
-      setMessages((prev) => [...prev, errorMessage]);
+      // Save error message
+      await saveMessage(
+        "Sorry, I couldn't process your question. Please try again.",
+        false
+      );
     } finally {
       setIsTyping(false);
     }
@@ -100,31 +93,47 @@ const GameChat = () => {
         {/* Inner container to maintain bottom alignment and proper spacing */}
         <div className="flex min-h-full flex-col justify-end">
           <div className="mx-auto max-w-3xl space-y-6 px-4 w-full py-4">
-            {messages.map((message) => (
-              <div
-                key={message.id}
-                className={`flex ${message.isUser ? 'justify-end' : 'justify-start'}`}
-              >
-                <div
-                  className={cn(
-                    "w-full rounded-xl p-4",
-                    message.isUser
-                      ? "bg-accent/90 text-white"
-                      : "bg-muted text-foreground"
-                  )}
-                >
-                  {message.isUser ? (
-                    <p className="text-sm md:text-base">{message.content}</p>
-                  ) : (
-                    <div className="text-sm md:text-base prose prose-invert max-w-none">
-                      <ReactMarkdown>
-                        {message.content}
-                      </ReactMarkdown>
-                    </div>
-                  )}
-                </div>
+            {error && (
+              <Alert variant="destructive">
+                <AlertDescription>
+                  Error loading messages. Please try refreshing the page.
+                </AlertDescription>
+              </Alert>
+            )}
+            
+            {loading ? (
+              <div className="flex justify-center py-4">
+                <ReloadIcon className="h-6 w-6 animate-spin" />
               </div>
-            ))}
+            ) : (
+              <>
+                {messages.map((message) => (
+                  <div
+                    key={message.id}
+                    className={`flex ${message.isUser ? 'justify-end' : 'justify-start'}`}
+                  >
+                    <div
+                      className={cn(
+                        "w-full rounded-xl p-4",
+                        message.isUser
+                          ? "bg-accent/90 text-white"
+                          : "bg-muted text-foreground"
+                      )}
+                    >
+                      {message.isUser ? (
+                        <p className="text-sm md:text-base">{message.content}</p>
+                      ) : (
+                        <div className="text-sm md:text-base prose prose-invert max-w-none">
+                          <ReactMarkdown>
+                            {message.content}
+                          </ReactMarkdown>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </>
+            )}
             
             {isTyping && (
               <div className="flex justify-start">

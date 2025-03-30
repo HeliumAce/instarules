@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
@@ -17,56 +17,72 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const isInitialMount = useRef(true);
   const lastExpiresAt = useRef<number | null>(null);
+  const initialPathRef = useRef<string>(location.pathname);
 
+  // Handle initial session check
   useEffect(() => {
-    // Check for existing session first
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (session) {
-        lastExpiresAt.current = session.expires_at;
-      }
-      setLoading(false);
-    });
-
-    // Then set up auth state listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
+    const initializeAuth = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        
         setSession(session);
         setUser(session?.user ?? null);
         
-        // Only handle navigation and show toast for actual auth events
-        if (!isInitialMount.current) {
-          // Check if this is a real session change or just a visibility change
-          const isRealSessionChange = session?.expires_at !== lastExpiresAt.current;
-          
-          if (event === 'SIGNED_IN' && isRealSessionChange) {
-            lastExpiresAt.current = session?.expires_at ?? null;
-            toast({
-              title: "Welcome back!",
-              description: "You have successfully signed in.",
-            });
+        if (session) {
+          lastExpiresAt.current = session.expires_at;
+          // Only redirect to dashboard if we're on the auth page
+          if (location.pathname === '/auth') {
             navigate('/dashboard');
           }
-          
-          if (event === 'SIGNED_OUT') {
-            lastExpiresAt.current = null;
-            toast({
-              title: "Signed out",
-              description: "You have been signed out successfully.",
-            });
-            navigate('/auth');
-          }
-        } else {
-          if (session) {
-            lastExpiresAt.current = session.expires_at;
-          }
-          isInitialMount.current = false;
+        } else if (location.pathname !== '/auth') {
+          // If no session and not on auth page, redirect to auth
+          navigate('/auth');
+        }
+      } catch (error) {
+        console.error('Error checking session:', error);
+      } finally {
+        setLoading(false);
+        isInitialMount.current = false;
+      }
+    };
+
+    initializeAuth();
+  }, []);
+
+  // Handle auth state changes
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        // Always update the session and user state
+        setSession(session);
+        setUser(session?.user ?? null);
+        
+        // Skip navigation logic during initial mount
+        if (isInitialMount.current) return;
+
+        // Check if this is a real session change
+        const isRealSessionChange = session?.expires_at !== lastExpiresAt.current;
+        
+        if (event === 'SIGNED_IN' && isRealSessionChange) {
+          lastExpiresAt.current = session?.expires_at ?? null;
+          toast({
+            title: "Welcome back!",
+            description: "You have successfully signed in.",
+          });
+          navigate('/dashboard');
+        } else if (event === 'SIGNED_OUT') {
+          lastExpiresAt.current = null;
+          toast({
+            title: "Signed out",
+            description: "You have been signed out successfully.",
+          });
+          navigate('/auth');
         }
       }
     );
@@ -128,6 +144,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       throw error;
     }
   };
+
+  // Don't render children until we've checked for an existing session
+  if (loading) {
+    return null;
+  }
 
   return (
     <AuthContext.Provider value={{ user, session, loading, signUp, signIn, signOut }}>

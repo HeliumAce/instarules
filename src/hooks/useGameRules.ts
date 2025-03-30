@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import LLMService from '@/services/LLMService';
 import RulesService from '@/services/RulesService';
+import { gameResponses } from '@/data/games';
 
 export function useGameRules(gameId: string) {
   const [loading, setLoading] = useState(false);
@@ -14,37 +15,39 @@ export function useGameRules(gameId: string) {
     setError(null);
     
     try {
-      // Load game rules
-      console.log('Loading rules for game:', gameId);
-      const rules = await RulesService.loadRules(gameId);
-      
-      if (!rules || !rules.sections) {
-        console.error('Invalid rules format or missing sections');
-        return "I'm sorry, but I couldn't load the rules for this game. Please try again later.";
+      // First try to load game rules
+      try {
+        const rules = await RulesService.loadRules(gameId);
+        
+        if (rules && rules.sections) {
+          // Find relevant sections
+          const relevantSections = RulesService.findRelevantSections(rules, question);
+          
+          if (relevantSections.length > 0) {
+            // Build prompt with relevant sections
+            const prompt = buildPrompt(rules.game, question, relevantSections);
+            
+            // Get response from LLM
+            const response = await LLMService.getCompletion(prompt);
+            if (response) return response;
+          }
+        }
+      } catch (err) {
+        console.warn('Failed to load rules from JSON, falling back to static responses:', err);
       }
       
-      // Find relevant sections
-      console.log('Finding relevant sections for query:', question);
-      const relevantSections = RulesService.findRelevantSections(rules, question);
-      console.log('Found relevant sections:', relevantSections.length, 
-                  'Titles:', relevantSections.map(s => s.title));
+      // Fall back to static responses if rules loading fails
+      const gameSpecificResponses = gameResponses[gameId] || gameResponses.default;
+      const normalizedQuery = question.toLowerCase();
       
-      if (relevantSections.length === 0) {
-        console.log('No relevant sections found');
-        return "I couldn't find specific information about that in the game rules. Could you rephrase your question or ask about a different aspect of the game?";
+      for (const [keyword, response] of Object.entries(gameSpecificResponses)) {
+        if (keyword !== 'default' && normalizedQuery.includes(keyword)) {
+          return response;
+        }
       }
       
-      // Build prompt with relevant sections
-      console.log('Building prompt');
-      const prompt = buildPrompt(rules.game, question, relevantSections);
-      console.log('Prompt built, length:', prompt.length);
+      return gameSpecificResponses.default;
       
-      // Get response from LLM
-      console.log('Calling LLMService.getCompletion');
-      const response = await LLMService.getCompletion(prompt);
-      console.log('Received response from LLM:', response ? 'Yes (length: ' + response.length + ')' : 'No');
-      
-      return response;
     } catch (err: any) {
       const errorMsg = err.message || 'An error occurred';
       console.error('Error in askQuestion:', errorMsg, err);
