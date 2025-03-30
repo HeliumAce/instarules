@@ -1,0 +1,1002 @@
+[
+  {
+    "id": "ARCS-AID01A",
+    "text": "**When Secured:** Flip this card over to its Imperial Council Decided side. As a reminder, tuck it partially under your played card so its card title is showing.",
+    "image": "AID01A",
+    "name": "Imperial Council in Session",
+    "flipSide": "ARCS-AID01B",
+    "tags": [
+      "Blighted Reach",
+      "Imperial Council"
+    ]
+  },
+  {
+    "id": "ARCS-AID01B",
+    "text": "**When the round ends, return Imperial Council Decided to the Court, then:**\n\n1.  You may call a Summit.\n\n2.  If you're a Regent, become First Regent.\n\n3.  If you're an outlaw, steal from the First Regent tile. *(See Empire Rules sheet.)*\n\n4.  You must resolve either Crises or Edits.\n\nYou cannot **influence** or **secure** this card.\n\n*You may flip this card to In Session if you call a Summit and Petition the Council.*",
+    "image": "AID01B",
+    "name": "Imperial Council Decided",
+    "flipSide": "ARCS-AID01A",
+    "tags": [
+      "Blighted Reach",
+      "Imperial Council"
+    ]
+  },
+  {
+    "id": "ARCS-AID02",
+    "text": "*This card is only used in two-player games.*\n\nBury all ***Guild cards*** in the Court with no agents on them, then refill the Court.",
+    "image": "AID02",
+    "name": "Guild Envoys Depart",
+    "tags": [
+      "Blighted Reach",
+      "Edict"
+    ]
+  },
+  {
+    "id": "ARCS-AID03",
+    "text": "The First Regent must either enforce this Policy or change to a new Policy Card.\n\n**A Policy of War**\n\n**1. Collect Demand:** Take 1 Trophy or Captive, but not Imperial or Regent pieces, from each Rival Regent. If they have none, take 1 agent from their supply as a Favor. If they have no agents, you may make them an Outlaw.\n\n**2. Imperial Action:** Give 1 Weapon to each Regent from the supply. If the supply is empty, give it from the Imperial Trust.",
+    "image": "AID03",
+    "name": "Govern the Imperial Reach",
+    "tags": [
+      "Blighted Reach",
+      "Edict"
+    ]
+  },
+  {
+    "id": "ARCS-AID04",
+    "text": "The First Regent must either enforce this Policy or change to a new Policy Card.\n\n**A Policy of Peace**\n\n**1. Collect Demand:** Take 1 Relic or Psionic from each Regent, even you. Place it in the ***Imperial Trust*** on your First Regent tile.\n\nIf a Rival Regent has none, take 1 agent from their supply as a Favor. If they have no agents, you make make them an Outlaw.\n\n**2. Imperial Action:** Each Regent gains their bonus city Power on uncovered city slots.",
+    "image": "AID04",
+    "name": "Govern the Imperial Reach",
+    "tags": [
+      "Blighted Reach",
+      "Edict"
+    ]
+  },
+  {
+    "id": "ARCS-AID05",
+    "text": "The First Regent must either enforce this Policy or change to a new Policy Card.\n\n**A Policy of Escalation**\n\n**1. Collect Demand:** Take 1 Weapon, Fuel, or Material from each Regent, even you. Place it in the ***Imperial Trust*** on your First Regent tile.\n\nIf a Rival Regent has none, take 1 agent from their supply as a Favor. If they have no agents, you make make them an Outlaw.\n\n**2. Imperial Action:** Place 2 fresh Imperial ships in an Empire-controlled system. If there are none, place them at a Loyal starport.",
+    "image": "AID05",
+    "name": "Govern the Imperial Reach",
+    "tags": [
+      "Blighted Reach",
+      "Edict"
+    ]
+  },
+  {
+    "id": "ARCS-AID06A",
+    "text": "***Tuck this partially under your Fate card.***\n\nYou must follow the rules for Regents listed on the Empire Rules aid sheet.\n\n*You can become an **Outlaw**, flipping this title over, if you call a Summit.*",
+    "image": "AID06A",
+    "name": "Imperial Regent",
+    "flipSide": "ARCS-AID06B",
+    "tags": [
+      "Blighted Reach",
+      "Title"
+    ]
+  },
+  {
+    "id": "ARCS-AID06B",
+    "text": "***Tuck this partially under your Fate card.***\n\nYou must follow the rules for Outlaws listed on the Empire rules aid sheet.\n\n*You can become a **Regent**, flipping this card over, if the First Regent consents to it in a Summit.*\n\n*You can force them to make you a Regent if you called the Summit and return 1 Favor of their to them.*",
+    "image": "AID06B",
+    "name": "Outlaw",
+    "flipSide": "ARCS-AID06A",
+    "tags": [
+      "Blighted Reach",
+      "Title"
+    ]
+  },
+  {
+    "id": "ARCS-AID10A",
+    "text": "*Damaged Upgrades still give benefits.*\n\n**Slipstream Drive**\n\n**Prelude:** Once per turn, you may Catapult move either your Flagship alone or other ships from your Flagship.\n\n**Tractor Beam**\n\nWhen your Flagship is defending in **battle**, the attacker cannot collect raid dice.\n\n**Control Array**\n\nWhile your Flagship is in a gate, you may **tax** any citires in its cluster like they are Loyal. *(Don't take Captives.)*",
+    "image": "AID10A",
+    "name": "Flagship Upgrades",
+    "flipSide": "ARCS-AID10B",
+    "tags": [
+      "Blighted Reach",
+      "Ability"
+    ]
+  },
+  {
+    "id": "ARCS-AID10B",
+    "text": "*Damaged Upgrades still give benefits.*\n\n**Defense Array**\n\nWhen defending in **battle**, your Flagship can intercept, dealing 1 hit for each fresh starport on your Flagship board.\n\n**Ship Crane**\n\nYour Flagship may **build** up to 2 ships per turn, not 1. *(You still must build twice to build 2 ships)*\n\n**Hull**\n\nThis has no special benefit. It may be hit like any other Upgrade.",
+    "image": "AID10B",
+    "name": "Flagship Upgrades",
+    "flipSide": "ARCS-AID10A",
+    "tags": [
+      "Blighted Reach",
+      "Ability"
+    ]
+  },
+  {
+    "id": "ARCS-CC01",
+    "text": "**Manufacture (Build):** Gain 1  Material.\n\n**Prelude:** You may discard this to gain Material up to your number of empty resource slots. If the Material supply empties, steal the Material instead.",
+    "image": "CC01",
+    "name": "Mining Interest",
+    "tags": [
+      "Blighted Reach",
+      "Blighted Reach Court",
+      "Guild",
+      "Material"
+    ],
+    "meta": {
+      "keys": 2
+    }
+  },
+  {
+    "id": "ARCS-CC02",
+    "text": "**Prelude:** You may place this card next to a face-up played Construction card. When the round ends, draw that card into your hand and discard this card.",
+    "image": "CC02",
+    "name": "Construction Union",
+    "tags": [
+      "Blighted Reach",
+      "Blighted Reach Court",
+      "Guild",
+      "Material"
+    ],
+    "meta": {
+      "keys": 2
+    }
+  },
+  {
+    "id": "ARCS-CC03",
+    "text": "When you **battle** in a gate, you may collect 2 more dice.\n\n**Prelude:** You may discard this to place 1 ship in each gate *(unless out of play)*.",
+    "image": "CC03",
+    "name": "Gatekeepers",
+    "tags": [
+      "Blighted Reach",
+      "Blighted Reach Court",
+      "Guild",
+      "Fuel"
+    ],
+    "meta": {
+      "keys": 2
+    }
+  },
+  {
+    "id": "ARCS-CC04",
+    "text": "**Synthesize (Build):** Gain 1 Fuel.\n\n**Prelude:** You may discard this to gain Fuel up to your number of empty resource slots. If the Fuel supply empties, steal the Fuel instead.",
+    "image": "CC04",
+    "name": "Shipping Interest",
+    "tags": [
+      "Blighted Reach",
+      "Blighted Reach Court",
+      "Guild",
+      "Fuel"
+    ],
+    "meta": {
+      "keys": 2
+    }
+  },
+  {
+    "id": "ARCS-CC05",
+    "text": "After you roll in **battle**, you may reroll a number of skirmish dice up to your total Weapon icons from resources and cards.\n\n**Prelude:** You may discard this to place 3 ships in a system you control.",
+    "image": "CC05",
+    "name": "Skirmishers",
+    "tags": [
+      "Blighted Reach",
+      "Blighted Reach Court",
+      "Guild",
+      "Weapon"
+    ],
+    "meta": {
+      "keys": 2
+    }
+  },
+  {
+    "id": "ARCS-CC06",
+    "text": "**Prelude:** You may place this card next to a face-up played Aggression card. When the round ends, draw that card into your hand and discard this card.",
+    "image": "CC06",
+    "name": "Arms Union",
+    "tags": [
+      "Blighted Reach",
+      "Blighted Reach Court",
+      "Guild",
+      "Weapon"
+    ],
+    "meta": {
+      "keys": 2
+    }
+  },
+  {
+    "id": "ARCS-CC07",
+    "text": "**Prelude:** Before any other actions, you may discard this to seize the initiative.\n\n*You can't seize the initiative if you have it or if it's already seized this round!*",
+    "image": "CC07",
+    "name": "Lattice Spies",
+    "tags": [
+      "Blighted Reach",
+      "Blighted Reach Court",
+      "Guild",
+      "Psionic"
+    ],
+    "meta": {
+      "keys": 2
+    }
+  },
+  {
+    "id": "ARCS-CC08",
+    "text": "**Prelude:** You may discard this to steal a Guild card or resource.",
+    "image": "CC08",
+    "name": "Silver Tongues",
+    "tags": [
+      "Blighted Reach",
+      "Blighted Reach Court",
+      "Guild",
+      "Psionic"
+    ],
+    "meta": {
+      "keys": 2
+    }
+  },
+  {
+    "id": "ARCS-CC09",
+    "text": "Rivals cannot steal your resources and other Guild cards. *(In battle they can steal this first and then spend `symbol:key`.)*\n\nIf this card is stolen, bury it. *(Place it on the bottom of the Court deck.)*",
+    "image": "CC09",
+    "name": "Sworn Guardians",
+    "tags": [
+      "Blighted Reach",
+      "Blighted Reach Court",
+      "Guild",
+      "Relic"
+    ],
+    "meta": {
+      "keys": 2
+    }
+  },
+  {
+    "id": "ARCS-CC10",
+    "text": "**Trade (Tax):** Choose a Rival city you control. Swap 1 resource with that Rival—take a resource of that city type from them, and give them a resource they don't have.\n\n**Prelude:** You may discard this to gain 1 Material, 1 Fuel, and 1 Weapon.",
+    "image": "CC10",
+    "name": "Elder Broker",
+    "tags": [
+      "Blighted Reach",
+      "Blighted Reach Court",
+      "Guild",
+      "Relic"
+    ],
+    "meta": {
+      "keys": 2
+    }
+  },
+  {
+    "id": "ARCS-CC11",
+    "text": "**Crisis:** Return the declared ambition marker of highest Power to Available Ambitions.\n\n**When Secured:** You may declare any ambition. *(An ambition marker must be Available.)* Bury this card.",
+    "image": "CC11",
+    "name": "Populist Demands",
+    "tags": [
+      "Blighted Reach",
+      "Blighted Reach Court",
+      "Vox"
+    ]
+  },
+  {
+    "id": "ARCS-CC12",
+    "text": "**Crisis:** Flip the Imperial Council to In Session. Move agents from here to it. Bury this card.\n\n**When Secured:** Flip the Imperial Council to In Session. You may move any Loyal agents from here to other Court cards *(even the Council)*. Bury this card.",
+    "image": "CC12",
+    "name": "Council Intrigue",
+    "tags": [
+      "Blighted Reach",
+      "Blighted Reach Court",
+      "Vox"
+    ]
+  },
+  {
+    "id": "ARCS-CC13",
+    "text": "**Crisis:** In turn order, each player with more Guild cards than agents in their supply must discard Guild cards until their Guild cards equal their agents. Bury this card. *(Count protected Guild cards but don't discard them.)*\n\n**When Secured:** Rivals resolve the Crisis.",
+    "image": "CC13",
+    "name": "Diplomatic Fiasco",
+    "tags": [
+      "Blighted Reach",
+      "Blighted Reach Court",
+      "Vox"
+    ]
+  },
+  {
+    "id": "ARCS-CC14",
+    "text": "**Crisis:** The player with the most Power must replace a Loyal city with a Free city.\n\n**When Secured:** You may replace ***any*** Loyal or Rival city you control with a Free city. If you do, you may seize the initiative. Shuffle this card into the Court deck.",
+    "image": "CC14",
+    "name": "Song of Freedom",
+    "tags": [
+      "Blighted Reach",
+      "Blighted Reach Court",
+      "Vox"
+    ]
+  },
+  {
+    "id": "ARCS-CC15",
+    "text": "**Crisis:** Repair all Blight in the rolled cluster. Place 1 damaged Blight at each planet of the rolled symbol with no Blight. Bury this card.\n\n**When Secured:** You may destroy all damaged Blight in a cluster with Loyal pieces. Bury this card.",
+    "image": "CC15",
+    "name": "Blight Looms",
+    "tags": [
+      "Blighted Reach",
+      "Blighted Reach Court",
+      "Vox"
+    ]
+  },
+  {
+    "id": "ARCS-FATE01",
+    "text": "*Hold together a fragmenting empire while navigating fractious court politics.*\n\n**YOUR PATH TO POWER**\n\n**I.** Assert your authority by winning Ambitions as the First Regent.\n\n**II.** Extend the Empire's control and fill the Imperial Trust.\n\n**III.** Solidify the Empire's control over Outlaw citites and fill the Imperial Trust as the First Regent.",
+    "image": "FATE01",
+    "name": "Steward",
+    "tags": [
+      "Blighted Reach",
+      "Fate",
+      "Steward"
+    ],
+    "meta": {
+      "act": 1,
+      "complexity": 2
+    }
+  },
+  {
+    "id": "ARCS-FATE02",
+    "text": "*Build a new order founded on mutual respect and collective action.*\n\n**YOUR PATH TO POWER**\n\n**I.** Fulfill your ambitions and control systems as an Outlaw.\n\n**II.** Lead the Commonwealth and spread Free cities across the map.\n\n**III.** Protect the Free cities from control by the Empire and players outside the Commonwealth.",
+    "image": "FATE02",
+    "name": "Founder",
+    "tags": [
+      "Blighted Reach",
+      "Fate",
+      "Founder"
+    ],
+    "meta": {
+      "act": 1,
+      "complexity": 2
+    }
+  },
+  {
+    "id": "ARCS-FATE03",
+    "text": "*Corner the market and dominate the Reach with your commercial prowess.*\n\n**YOUR PATH TO POWER**\n\n**I.** Barter for resources and Favors from Rivals during Summits.\n\n**II.** Take and hold Monopolies over the resource supplies.\n\n**III.** Hold Monopolies and escape the Reach with your riches.",
+    "image": "FATE03",
+    "name": "Magnate",
+    "tags": [
+      "Blighted Reach",
+      "Fate",
+      "Magnate"
+    ],
+    "meta": {
+      "act": 1,
+      "complexity": 1
+    }
+  },
+  {
+    "id": "ARCS-FATE04",
+    "text": "*Connect with the ancient guilds of the Reach and make yourself indispensable.*\n\n**YOUR PATH TO POWER**\n\n**I.** Use and recover as many Guild cards as you can while proving yourself to the Guild Overseers.\n\n**II.** Have more Guild cards than your Rivals in a variety of suits. \n\n**III.** Fill the Court with Guild cards and keep a variety of Guild suits.",
+    "image": "FATE04",
+    "name": "Advocate",
+    "tags": [
+      "Blighted Reach",
+      "Fate",
+      "Advocate"
+    ],
+    "meta": {
+      "act": 1,
+      "complexity": 1
+    }
+  },
+  {
+    "id": "ARCS-FATE05",
+    "text": "*Awaken the Golems to safeguard the wisdom of the Precursors.*\n\n**YOUR PATH TO POWER**\n\n**I.** Control and awaken the Sleeping Golems, then use them.\n\n**II.** Collect lore from the Court and from your Rivals in Summits. \n\n**III.** Use your Golems to scrap your lore and the Golems themselves.",
+    "image": "FATE05",
+    "name": "Caretaker",
+    "tags": [
+      "Blighted Reach",
+      "Fate",
+      "Caretaker"
+    ],
+    "meta": {
+      "act": 1,
+      "complexity": 3
+    }
+  },
+  {
+    "id": "ARCS-FATE06",
+    "text": "*Destroy the oppressors of the Reach by any means necessary.*\n\n**YOUR PATH TO POWER**\n\n**I.** Get initiative even if you Provoke Outrage, and fulfill the ambitions favored by your supporters.\n\n**II.** Hold initiative and gather Guild support to burnish your image. \n\n**III.** Have the most Guild cards and continue to hold the initiative.",
+    "image": "FATE06",
+    "name": "Partisan",
+    "tags": [
+      "Blighted Reach",
+      "Fate",
+      "Partisan"
+    ],
+    "meta": {
+      "act": 1,
+      "complexity": 1
+    }
+  },
+  {
+    "id": "ARCS-FATE07",
+    "text": "*Restore the strength of the Empire's fleet and claim your rightful throne.*\n\n**YOUR PATH TO POWER**\n\n**I.** Prove yourself by enlarging the Imperial fleet and using it in battle to take Trophies.\n\n**II.** Exert Imperial control of planets and dominate your foes, Regents and Outlaws alike.\n\n**III.** Control the Reach's planets and build the strongest navy.",
+    "image": "FATE07",
+    "name": "Admiral",
+    "tags": [
+      "Blighted Reach",
+      "Fate",
+      "Admiral"
+    ],
+    "meta": {
+      "act": 1,
+      "complexity": 1
+    }
+  },
+  {
+    "id": "ARCS-FATE08",
+    "text": "*Open their eyes to the Truth.*\n\n**YOUR PATH TO POWER**\n\n**I.** Add Faithful action cards into play while winning ambitions.\n\n**II.** Establish the Ideals of your faith by declaring ambitions with Faithful cards and fulfilling them.\n\n**III.** Insist that the ambitions with Ideals are consistently declared.",
+    "image": "FATE08",
+    "name": "Believer",
+    "tags": [
+      "Blighted Reach",
+      "Fate",
+      "Believer"
+    ],
+    "meta": {
+      "act": 1,
+      "complexity": 3
+    }
+  },
+  {
+    "id": "ARCS-FATE09",
+    "text": "*There's rumor of a Reach beyond our Reach. We must escape the decay engulfing us here.*\n\n**YOUR PATH TO POWER**\n\n**II.** Search for clues and locate the secret Portal. **Abandon your buildings for a Flagship.**\n\n**III.** Guide the Pilgrims to the Portal. **Rivals can gain Power by drawing ships into the Portal.**",
+    "image": "FATE09",
+    "name": "Pathfinder",
+    "tags": [
+      "Blighted Reach",
+      "Fate",
+      "Pathfinder"
+    ],
+    "meta": {
+      "act": 2,
+      "complexity": 2
+    }
+  },
+  {
+    "id": "ARCS-FATE10",
+    "text": "*Division breeds chaos. Order demands that we follow one banner, think with one mind.*\n\n**YOUR PATH TO POWER**\n\n**II.** Plant Banners of a new order on planets you dominate. **Abandon your buildings for a Flagship and lose some of your fleet forever, but replenish your fleet.**\n\n**III.** Keep many Banners on the map. **Rivals can gain Power by holding them as Trophies.**",
+    "image": "FATE10",
+    "name": "Hegemon",
+    "tags": [
+      "Blighted Reach",
+      "Fate",
+      "Hegemon"
+    ],
+    "meta": {
+      "act": 2,
+      "complexity": 2
+    }
+  },
+  {
+    "id": "ARCS-FATE11",
+    "text": "*There are simply too many of us.*\n\n**YOUR PATH TO POWER**\n\n**II.** Collect the Hammer Fragments to repair the Planet Hammer, then break a planet. **Abandon your buildings for a Flagship.**\n\n**III.** Fill the Reach with Outrage and destroy buildings by breaking planets. **Rivals can clear Outrage and gain resources by resettling Refugees.**",
+    "image": "FATE11",
+    "name": "Planet Breaker",
+    "tags": [
+      "Blighted Reach",
+      "Fate",
+      "Planet Breaker"
+    ],
+    "meta": {
+      "act": 2,
+      "complexity": 3
+    }
+  },
+  {
+    "id": "ARCS-FATE12",
+    "text": "*The merchants have stripped us of our wealth, but riches await those who would seize them.*\n\n**YOUR PATH TO POWER**\n\n**II.** Fill your Pirate Hoard with stolen resources. **Abandon your buildings for a Flagship, but replenish your fleet.**\n\n**III.** Keep your Pirate Haven secret and safe. **Rivals can gain Power by finding the Haven.**",
+    "image": "FATE12",
+    "name": "Pirate",
+    "tags": [
+      "Blighted Reach",
+      "Fate",
+      "Pirate"
+    ],
+    "meta": {
+      "act": 2,
+      "complexity": 1
+    }
+  },
+  {
+    "id": "ARCS-FATE13",
+    "text": "*The very air of the blighted worlds seems to pulse. The vines grow with purpose and design. We only need to listen.*\n\n**YOUR PATH TO POWER**\n\n**II.** Spread the Blight and study them while winning ambitions. **Replenish your fleet.**\n\n**III.** Dominate the Warlord ambition and ensure the Blight is well-fed.**Rivals can gain Power by hunting Blight.**",
+    "image": "FATE13",
+    "name": "Blight Speaker",
+    "tags": [
+      "Blighted Reach",
+      "Fate",
+      "Blight Speaker"
+    ],
+    "meta": {
+      "keys": 0,
+      "act": 2,
+      "complexity": 1
+    }
+  },
+  {
+    "id": "ARCS-FATE14",
+    "text": "*The Reach is dying. To heal our wounds, we must feel each other's pain.*\n\n**YOUR PATH TO POWER**\n\n**II.** Commit to taking no Trophies or Captives while spreading Psionic energy. **Clear all your Outrage and replenish your fleet.**\n\n**III.** Commit to pacifism while ensuring your Rivals have a Psionic connection. **Rivals will benefit from your efforts.**",
+    "image": "FATE14",
+    "name": "Pacifist",
+    "tags": [
+      "Blighted Reach",
+      "Fate",
+      "Pacifist"
+    ],
+    "meta": {
+      "act": 2,
+      "complexity": 2
+    }
+  },
+  {
+    "id": "ARCS-FATE15",
+    "text": "*For the sake of peace, we must eliminate the tools of suffering.*\n\n**YOUR PATH TO POWER**\n\n**II.** Control Weapons planets and confiscate Weapons. **Clear your Outrage but Provoke Weapon Outrage. Replenish your fleet. Warlord is now worthless to you.**\n\n**III.** Enforce peace with Ceasefires. **Rivals can gain Power by controlling systems at peace.**",
+    "image": "FATE15",
+    "name": "Peacekeeper",
+    "tags": [
+      "Blighted Reach",
+      "Fate",
+      "Peacekeeper"
+    ],
+    "meta": {
+      "act": 2,
+      "complexity": 2
+    }
+  },
+  {
+    "id": "ARCS-FATE16",
+    "text": "*The Reach is too wide for any one empire to hold together. To keep it safe, we must return to the old ways.*\n\n**YOUR PATH TO POWER**\n\n**II.** Become a Lord by establishing Fiefs and controlling their Seat cities. **Replenish your fleet.**\n\n**III.** Keep hold of your Fiefs as feudalism spreads through the Reach. **Rivals can gain Power as Lords of their own Fiefs.**",
+    "image": "FATE16",
+    "name": "Warden",
+    "tags": [
+      "Blighted Reach",
+      "Fate",
+      "Warden"
+    ],
+    "meta": {
+      "act": 2,
+      "complexity": 3
+    }
+  },
+  {
+    "id": "ARCS-FATE17",
+    "text": "*I won't bow to you any longer. Tremble before me!*\n\n**YOUR PATH TO POWER**\n\nRule over those who despise you by controlling Outraged planets and holding Outraged resources. **You may abandon your Flagship to replenish your fleet. When the Edicts are called, your Outrage will make you lose Power as the Reach rejects your rule.**",
+    "image": "FATE17",
+    "name": "Overlord",
+    "tags": [
+      "Blighted Reach",
+      "Fate",
+      "Overlord"
+    ],
+    "meta": {
+      "act": 3,
+      "complexity": 1
+    }
+  },
+  {
+    "id": "ARCS-FATE18",
+    "text": "*The storm is here. Let me offer you shelter.*\n\n**YOUR PATH TO POWER**\n\nBuild Bunkers across the planets of the Reach and take Captives into them, protecting them against the Blight. **You may abandon your Flagship to replenish your fleet. You can no longer declare Tyrant, and you gain less Power from winning ambitions.**",
+    "image": "FATE18",
+    "name": "Survivalist",
+    "tags": [
+      "Blighted Reach",
+      "Fate",
+      "Survivalist"
+    ],
+    "meta": {
+      "act": 3,
+      "complexity": 2
+    }
+  },
+  {
+    "id": "ARCS-FATE19",
+    "text": "*The Precursors taught us violence. The Keepers perpetuate it. A better future means forgetting the past.*\n\n**YOUR PATH TO POWER**\n\nCollect the Relics and then destroy them. **You may abandon your Flagship to replenish your fleet. Provoke Relic Outrage. Keeper is harder for you and can make you lose Power.**",
+    "image": "FATE19",
+    "name": "Redeemer",
+    "tags": [
+      "Blighted Reach",
+      "Fate",
+      "Redeemer"
+    ],
+    "meta": {
+      "act": 3,
+      "complexity": 1
+    }
+  },
+  {
+    "id": "ARCS-FATE20",
+    "text": "*Our cities are symbols of our shame. If we keep exploiting the bounties of the Reach, nothing will remain.*\n\n**YOUR PATH TO POWER**\n\nProtect the Reach with the new Edenguard ambition—control the most Material and Fuel planets—and by capturing Material and Fuel. **You may abandon your Flagship to replenish your fleet. Provoke Material and Fuel Outrage. Tycoon is now worthless to you.**",
+    "image": "FATE20",
+    "name": "Guardian",
+    "tags": [
+      "Blighted Reach",
+      "Fate",
+      "Guardian"
+    ],
+    "meta": {
+      "act": 3,
+      "complexity": 1
+    }
+  },
+  {
+    "id": "ARCS-FATE21",
+    "text": "*Blight is beautiful. All it needs is a patient gardener.*\n\n**YOUR PATH TO POWER**\n\nShow that Blight is not a threat with the new Blightkin ambition—control the most systems with fresh Blight. You can move and repair Blight, and you can stop Blight Crises in systems with Loyal ships. **You may abandon your Flagship to replenish your fleet. Damaging and destroying Blight now makes you scrap agents.**",
+    "image": "FATE21",
+    "name": "Naturalist",
+    "tags": [
+      "Blighted Reach",
+      "Fate",
+      "Naturalist"
+    ],
+    "meta": {
+      "act": 3,
+      "complexity": 2
+    }
+  },
+  {
+    "id": "ARCS-FATE22",
+    "text": "*Find the way... Reunite... Make whole...*\n\n**YOUR PATH TO POWER**\n\nCollapse gates to create Passages into the central area of the map, the Twisted Passage, and then control it. **You may abandon your Flagship to replenish your fleet. The Twisted Passage is a space-time anomaly that connects the map in new, strange ways and brings ships back from the dead.**",
+    "image": "FATE22",
+    "name": "Gate Wraith",
+    "tags": [
+      "Blighted Reach",
+      "Fate",
+      "Gate Wraith"
+    ],
+    "meta": {
+      "act": 3,
+      "complexity": 3
+    }
+  },
+  {
+    "id": "ARCS-FATE23",
+    "text": "*Yes, it was me! I was pulling the strings from the start!*\n\n**YOUR PATH TO POWER**\n\nPlot Conspiracies to predict who will win ambitions or tie for first place. But don't be too obvious—Rivals can foil you by guessing them. **You may abandon your Flagship to replenish your fleet. You can no longer declare ambitions yourself.**",
+    "image": "FATE23",
+    "name": "Conspirator",
+    "tags": [
+      "Blighted Reach",
+      "Fate",
+      "Conspirator"
+    ],
+    "meta": {
+      "act": 3,
+      "complexity": 2
+    }
+  },
+  {
+    "id": "ARCS-FATE24",
+    "text": "*Absolute power corrupts absolutely. Only I can balance the scales.*\n\n**YOUR PATH TO POWER**\n\nBalance the Reach by ensuring players tie for first place in ambitions. **You may abandon your Flagship to replenish your fleet. Rivals can now steal your Trophies and Captives. Each time the Edicts happen, you must name a Rival as the Judge's Chosen, letting them use your ships.**",
+    "image": "FATE24",
+    "name": "Judge",
+    "tags": [
+      "Blighted Reach",
+      "Fate",
+      "Judge"
+    ],
+    "meta": {
+      "act": 3,
+      "complexity": 3
+    }
+  },
+  {
+    "id": "ARCS-F101A",
+    "text": "1. Gain Imperial Authority (02) and Dealmakers (03).\n\n2. Gain the First Regent tile.\n\n*Flip this card over.*",
+    "image": "F101A",
+    "name": "Steward Act I Setup",
+    "flipSide": "ARCS-F101B",
+    "tags": [
+      "Blighted Reach",
+      "Setup",
+      "Steward"
+    ],
+    "meta": {
+      "act": 1
+    }
+  },
+  {
+    "id": "ARCS-F101B",
+    "text": "***Consolidate Your Imperial Power***\n\nEach time you win an ambition while you're the First Regent, advance 1 `symbol:clock` for each Power you gain from it.\n\n*Count bonus Power from city slots uncovered on your player board. For example, if you gain 5 Power from winning an ambition and gain 5 bonus city Power, advance your objective marker 10 spaces.*",
+    "image": "F101B",
+    "name": "Imperial Authority",
+    "flipSide": "ARCS-F101A",
+    "tags": [
+      "Blighted Reach",
+      "Objective",
+      "Steward"
+    ],
+    "meta": {
+      "act": 1
+    }
+  },
+  {
+    "id": "ARCS-F102",
+    "text": "***Bury this if you're an Outlaw.***\n\nYou may **tax *any*** cities controlled by the Empire like they are Loyal, ignoring the Empire's Presence and Truce Laws. *(Don't take Captives.)*",
+    "image": "F102",
+    "name": "Imperial Authority",
+    "tags": [
+      "Blighted Reach",
+      "Lore",
+      "Steward"
+    ],
+    "meta": {
+      "act": 1
+    }
+  },
+  {
+    "id": "ARCS-F103",
+    "text": "**Bargain (Secure):** Choose a Court card that a Rival could secure. They secure it but return agents they would capture. You influence once for each agent they had on the card, then you secure once.",
+    "image": "F103",
+    "name": "Dealmakers",
+    "tags": [
+      "Blighted Reach",
+      "Guild",
+      "Psionic",
+      "Steward"
+    ],
+    "meta": {
+      "keys": 0,
+      "act": 1
+    }
+  },
+  {
+    "id": "ARCS-F104",
+    "text": "**If you completed your objective:**\n\n1, Add Council Intrigue (05), Tax Collectors (06), and Hunter Squads (07) to the Court deck.\n\n2. Add Imperial Protectors (08) to the rules booklet. ***Explain it to everyone.***\n\nScrap Empire Falls (09) and 2 Lesser Regents (10–11).\n\n**If you failed your objective:**\n\n1. Scrap Council Intrigue (05), Tax Collectors (06), Hunter Squads (07), and Imperial Protectors (08).\n\n2. Add Empire Falls (09) and 2 Lesser Regents (10–11) to the Court deck.\n\n3. Add Dealmakers (03) to the Court deck.",
+    "image": "F104",
+    "name": "Steward Act I Resolution",
+    "tags": [
+      "Blighted Reach",
+      "Resolution",
+      "Steward"
+    ],
+    "meta": {
+      "act": 1
+    }
+  },
+  {
+    "id": "ARCS-F105",
+    "text": "**Crisis:** Flip the Imperial Council to In Session. Move agents from here to it. Bury this card.\n\n**When Secured:** Flip the Imperial Council to In Session. You may move any Loyal agents from here to other Court cards *(even the Council)*. Bury this card.",
+    "image": "F105",
+    "name": "Council Intrigue",
+    "tags": [
+      "Blighted Reach",
+      "Vox",
+      "Steward"
+    ],
+    "meta": {
+      "act": 2
+    }
+  },
+  {
+    "id": "ARCS-F106",
+    "text": "***Bury this if you're an Outlaw.***\n\nWhen you *tax* an Outlaw's city, you may take the resource from their player board.",
+    "image": "F106",
+    "name": "Tax Collectors",
+    "tags": [
+      "Blighted Reach",
+      "Guild",
+      "Relic",
+      "Steward"
+    ],
+    "meta": {
+      "keys": 3,
+      "act": 2
+    }
+  },
+  {
+    "id": "ARCS-F107",
+    "text": "When attacking an Outlaw in **battle**, you may reroll assault dice up to your total Weapons resources and cards.\n\n**Prelude:** You may discard this to place 3 ships in a system you control.",
+    "image": "F107",
+    "name": "Hunter Squads",
+    "tags": [
+      "Blighted Reach",
+      "Guild",
+      "Weapon",
+      "Steward"
+    ],
+    "meta": {
+      "keys": 3,
+      "act": 2
+    }
+  },
+  {
+    "id": "ARCS-F108",
+    "text": "**Blight Crises** do not happen in systems controlled by the Empire. *(That is, in systems with any fresh Imperial ships.)*",
+    "image": "F108",
+    "name": "Imperial Protectors",
+    "tags": [
+      "Blighted Reach",
+      "Law",
+      "Steward"
+    ],
+    "meta": {
+      "act": 2
+    }
+  },
+  {
+    "id": "ARCS-F109",
+    "text": "**Crisis:** If `symbol:arrow` was rolled, all Regents become Outlaws, hit each Imperial ship on the map, and discard this card.\n\n**When Secured:** You may take any Loyal agents from here and place them on other Court cards. Bury this card.",
+    "image": "F109",
+    "name": "Empire Falls",
+    "tags": [
+      "Blighted Reach",
+      "Vox",
+      "Steward"
+    ],
+    "meta": {
+      "act": 2
+    }
+  },
+  {
+    "id": "ARCS-F110",
+    "text": "**Prelude:** You may discard this to declare any ambition.",
+    "image": "F110",
+    "name": "Lesser Regent",
+    "tags": [
+      "Blighted Reach",
+      "Guild",
+      "Psionic",
+      "Steward"
+    ],
+    "meta": {
+      "keys": 2,
+      "act": 2
+    }
+  },
+  {
+    "id": "ARCS-F111",
+    "text": "**Prelude:** You may discard this to declare any ambition.",
+    "image": "F111",
+    "name": "Lesser Regent",
+    "tags": [
+      "Blighted Reach",
+      "Guild",
+      "Psionic",
+      "Steward"
+    ],
+    "meta": {
+      "keys": 2,
+      "act": 2
+    }
+  },
+  {
+    "id": "ARCS-F112A",
+    "text": "1. Add Imperial Quorum (13) to the Edicts.\n\n*Flip this card over.*",
+    "image": "F112A",
+    "name": "Steward Act II Setup",
+    "flipSide": "ARCS-F112B",
+    "tags": [
+      "Blighted Reach",
+      "Setup",
+      "Steward"
+    ],
+    "meta": {
+      "act": 2
+    }
+  },
+  {
+    "id": "ARCS-F112B",
+    "text": "***Expand the Empire***\n\nAt the end of each chapter, if you're the First Regent, **advance** 1 `symbol:clock` for each cluster where the Empire controls any systems.\n\n***Ensure the Emperor's Tribute***\n\nAt the end of each chapter, **advance** 1 `symbol:clock` for each resource in the First Regent's Imperial Trust.\n\n*You advance this way even if you're not First Regent.*",
+    "image": "F112B",
+    "name": "Steward Act II Objective",
+    "flipSide": "ARCS-F112A",
+    "tags": [
+      "Blighted Reach",
+      "Objective",
+      "Steward"
+    ],
+    "meta": {
+      "act": 2
+    }
+  },
+  {
+    "id": "ARCS-F113",
+    "text": "Resolve the effects of Edict 03—Govern the Imperial Reach, or Govern with Authority in Act III—as follows, then skip Edict 03 itself.\n\n**First, Collect Demand:** The First Regent collects the Demand.\n\n**Second, Take Action:** The Regent with the most starports built ***may*** take the Imperial Action. On a tie, skip this.\n\n**Third, Change Policy:** The Regent with the most cities built ***may*** change the Policy of Edict 03. On a tie, skip this.\n\n*The conditions \"most starports built\" and \"most cities built\" do include cities and starports on Flagship boards.*",
+    "image": "F113",
+    "name": "Imperial Quorum",
+    "tags": [
+      "Blighted Reach",
+      "Edict",
+      "Steward"
+    ],
+    "meta": {
+      "act": 2
+    }
+  },
+  {
+    "id": "ARCS-F114",
+    "text": "**If you completed your objective:**\n\n1. Add Navy Reprisal (15), Council Insiders (16), and Galactic Bards (17) to the Court deck.\n\n2. Scrap the 2 Imperial Defectors (18–19) and 2 Lesser Regents (20–22).\n\n**If you failed your objective:**\n\n1. Scrap Navy Reprisal (15), Council Insiders (16), and Galactic Bards (17).\n\n2. Add the 2 Imperial Defectors (18–19) and 2 Lesser Regents (20–22) to the Court deck.",
+    "image": "F114",
+    "name": "Steward Act II Resolution",
+    "tags": [
+      "Blighted Reach",
+      "Resolution",
+      "Steward"
+    ],
+    "meta": {
+      "act": 2
+    }
+  },
+  {
+    "id": "ARCS-F115",
+    "text": "**Crisis:** Each Imperial ship hits 1 ship of each Outlaw in its system, fresh ships first. Bury this card.\n\n**When Secured:** You may resolve the Crisis in one cluster you choose, or you may hit all Imperial ships in a cluster you choose. Bury this card.",
+    "image": "F115",
+    "name": "Navy Reprisal",
+    "tags": [
+      "Blighted Reach",
+      "Vox",
+      "Steward"
+    ],
+    "meta": {
+      "act": 3
+    }
+  },
+  {
+    "id": "ARCS-F116",
+    "text": "When you **secure** a Guild card, you may flip the Imperial Council to In Session or you may influence the Imperial Council if it is already In Session.",
+    "image": "F116",
+    "name": "Council Insiders",
+    "tags": [
+      "Blighted Reach",
+      "Guild",
+      "Psionic",
+      "Steward"
+    ],
+    "meta": {
+      "keys": 2,
+      "act": 3
+    }
+  },
+  {
+    "id": "ARCS-F117",
+    "text": "When you **Surpass** or **Pivot**, before taking ***any*** actions, you may declare the ambition on your played card if an ambition has not been declared yet this round. Do not place the zero marker.",
+    "image": "F117",
+    "name": "Galactic Bards",
+    "tags": [
+      "Blighted Reach",
+      "Guild",
+      "Relic",
+      "Steward"
+    ],
+    "meta": {
+      "keys": 1,
+      "act": 3
+    }
+  },
+  {
+    "id": "ARCS-F118",
+    "text": "**Crisis:** In the rolled cluster, replace all Imperial ships with ships of the Outlaw earliest in turn order. Bury this card.\n\n**When Secured:** You may resolve the Crisis in any cluster. Bury or discard this card.",
+    "image": "F118",
+    "name": "Imperial Defectors",
+    "tags": [
+      "Blighted Reach",
+      "Vox",
+      "Steward"
+    ],
+    "meta": {
+      "act": 3
+    }
+  },
+  {
+    "id": "ARCS-F119",
+    "text": "**Crisis:** In the rolled cluster, replace all Imperial ships with ships of the Outlaw earliest in turn order. Bury this card.\n\n**When Secured:** You may resolve the Crisis in any cluster. Bury or discard this card.",
+    "image": "F119",
+    "name": "Imperial Defectors",
+    "tags": [
+      "Blighted Reach",
+      "Vox",
+      "Steward"
+    ],
+    "meta": {
+      "act": 3
+    }
+  },
+  {
+    "id": "ARCS-F120",
+    "text": "**Prelude:** You may discard this to declare any ambition",
+    "image": "F120",
+    "name": "Lesser Regent",
+    "tags": [
+      "Blighted Reach",
+      "Guild",
+      "Psionic",
+      "Steward"
+    ],
+    "meta": {
+      "keys": 2,
+      "act": 3
+    }
+  }
+]
