@@ -1,0 +1,73 @@
+{
+  "title": "Arcs Rules FAQ (Blighted Reach)",
+  "lastUpdated": "August 30, 2024",
+  "introduction": "This FAQ answers rule questions related to the rulebook for the Arcs Blighted Reach\nExpansion. For FAQs and errata on specific cards, please refer to the Leder Card Library.\n\nThis FAQ is not exhaustive-it does not cover every rule, just those that may be overlooked or\ncause confusion. It does not cover the base game-see Arcs Rules FAQ (Base Game).\n\nPage numbers in this FAQ refer to the Blighted Reach Expansion rulebook unless otherwise\nnoted. This document is based on a community FAQ originally compiled prior to release by\nturmoilbyrd. We're indebted!",
+  "errata": [
+    {
+      "page": "Page 2, Stop!",
+      "text": "Mentions of \"deep wells\" should say \"lower wells.\"\n\nThe deep well is where the removable trays are stored, not the small cards, as described in\nOrganizing the Box on page 30."
+    },
+    {
+      "page": "Page 12, Event Cards",
+      "text": "Change the fourth sentence to the following. \"However, your Event card\ngives you no actions if another Event card was played earlier this round or if the Imperial\nCouncil was secured earlier this round (page 14)!\"\n\nChanged this to passive voice so that it doesn't matter who did what. If an Event card was\nplayed or the Imperial Council was secured, you don't get the actions."
+    },
+    {
+      "page": "Page 14, Imperial Council Decided",
+      "text": "Add the following text. \"If it flips while tucked under a\ncard, return it to the Court.\"\n\nAfter some soul-searching, we have reversed the previous behavior of the Council. This means\ncards like Council Intrigue can flip the Council while it's tucked under a card in the card play\narea, returning it to the Court. This cancels the resolution of the Council at the end of the round!"
+    },
+    {
+      "page": "Page 15, The Free States, Raiding",
+      "text": "Added sentence \"This counts as stealing.\"\nThis clarifies interactions with cards like Pirate Hoard."
+    },
+    {
+      "page": "Page 21, Imperial Trust",
+      "text": "Add the following text to the second sentence. \"Resources in the\nImperial Trust are frozen (page 27) except for Imperial Actions.\"\n\nThe Distribute Arms action under Imperial Actions already states that you give the Weapon from\nthe Imperial Trust, but this addition codifies the exception for clarity."
+    },
+    {
+      "page": "Page 25, Lore & Flagships",
+      "text": "This section has been renamed \"Cards & Flagships\" and now\napplies to all cards, rather than just lore.\n\nThe consequence here is that edicts like Policy of Escalation properly interact with Flagships."
+    },
+    {
+      "page": "Page 27, Protected Guild Cards",
+      "text": "This now reads \"Some Guild cards in the campaign are\nprotected, shown by an \"X\" icon in place of their raid cost. They cannot be removed from the\nholder's play area unless the holder Provokes Outrage of its suit or the card is referenced by\nname.\"\n\nThis now explicitly states that cards like Command Chaos can remove Imperial Officers, even\nthough it's protected, because it states it by name."
+    },
+    {
+      "page": "Page 27, Frozen",
+      "text": "This now reads \"Sometimes resources are frozen. The player holding frozen\nresources cannot remove them from the freezing piece except with scrap or as stated by the\nfreezing piece or pieces that reference it. For example, Govern the Imperial Reach can let the\nFirst Regent give Weapons from the Imperial Trust.\"\n\nThis better describes the cases where frozen applies and does not. Most importantly, it explicitly\nnames scrap as an exception, whereas before it was implied by its absence."
+    }
+  ],
+  "clarifications": [
+    {
+      "section": "Setup",
+      "text": "When adding Lore cards to the Court deck, don't look at them before adding them to the Court\ndeck facedown."
+    },
+    {
+      "section": "Resource Slots",
+      "text": "When a card says that it can \"hold\" resources, this is equivalent to it saying it \"has resource\nslots\" for those resources. This is mostly relevant for interactions with Golems, particularly the\nGolem Hearth."
+    },
+    {
+      "section": "Frozen Resources",
+      "text": "In the Summit, players cannot be forced to give a frozen resource.\n\nFrozen resources can be scrapped."
+    },
+    {
+      "section": "Chapter End Structure",
+      "text": "The campaign adds a few steps to ending the chapter. Here is a detailed timing breakdown.\n\n1. Scoring Ambitions\n\na. Resolve effects that happen at the start of scoring.\n\nb. Score ambitions. (In Act 3, also score grand ambitions.)\n\nc. Advance objectives that happen at the end of a chapter.\n\nd. Resolve effects that happen after scoring. If more than one needs to be resolved, the\nplayer with the initiative decides their order (base rulebook, page 22).\n\n2. Clean Up & Flip Ambition Marker\n\n3. End Game or Advance Chapter\n\na. If any final objectives are at \"0,\" the game ends. If more than one is at \"0,\" break the tie\nin turn order.\n\nb. If it was the last chapter, the game ends.\n\nc. Resolve effects that happen at end of game.\n\nd. Advance the chapter marker.\n\n4. Draw Cards. Each player draws 6 cards for the next chapter."
+    },
+    {
+      "section": "Protected Guild Cards",
+      "text": "A protected Guild card cannot be removed from the holder's play area unless the holder\nProvokes Outrage in the corresponding suit, or unless a card mentions the protected Guild card\nby name. This means they cannot be given in Summit (e.g., Guild Negotiations, Advocate's\nDemand) or discarded (e.g., Diplomatic Fiasco, Call to Pilgrimage)."
+    },
+    {
+      "section": "Attaching Cards",
+      "text": "You can attach a card to the Imperial Council regardless of which side it is on.\n\nWhen the Imperial Council is secured, it is not refilled. This means not drawing a card to refill it.\nIt also means that if it has an attached card that stays, the card does not slide down to refill\n(page 27)."
+    },
+    {
+      "section": "Flagships",
+      "text": "While placing the Flagship, if you do not have any Loyal pieces on the map, you place 3 ships in\na gate during step D of the Intermission (core rulebook, page 28).\n\nThe Flagship cannot be the target of Cede Control in the Summit.\n\nYou build Upgrades and Armor damaged if your Flagship's system is controlled by someone\nother than you."
+    }
+  ],
+  "changelog": [
+    "August 30th, 2024: Added errata for Page 25, Lore & Flagships and Page 15, The Free\nStates, Raiding. Reversed the ruling for the Page 14, Imperial Council Decided errata for fun\nand profit. Added the Resource Slots clarification section.",
+    "July 12th, 2024: Original release"
+  ]
+}
