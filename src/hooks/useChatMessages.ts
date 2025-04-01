@@ -126,10 +126,34 @@ export function useChatMessages(gameId: string) {
     }
   };
 
+  // Clear all messages
+  const clearMessages = async () => {
+    if (!user) {
+      throw new Error('You must be signed in to clear messages');
+    }
+
+    try {
+      const { error } = await supabase
+        .from('chat_messages')
+        .delete()
+        .eq('game_id', gameId)
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+
+      // Clear local state
+      setMessages([]);
+    } catch (err) {
+      console.error('Error clearing messages:', err);
+      throw err instanceof Error ? err : new Error('Failed to clear messages');
+    }
+  };
+
   return {
     messages,
     loading,
     error,
     saveMessage,
+    clearMessages,
   };
 } 

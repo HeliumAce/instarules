@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { useParams, Navigate } from 'react-router-dom';
-import { SendHorizontal, Loader2 } from 'lucide-react';
+import { SendHorizontal, Loader2, Trash2 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -19,9 +19,10 @@ const GameChat = () => {
   const game = gameId ? getGameById(gameId) : undefined;
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const [isClearing, setIsClearing] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { askQuestion } = useGameRules(gameId || '');
-  const { messages, loading, error, saveMessage } = useChatMessages(gameId || '');
+  const { messages, loading, error, saveMessage, clearMessages } = useChatMessages(gameId || '');
   const welcomeShownRef = useRef(false);
 
   useEffect(() => {
@@ -82,10 +83,36 @@ const GameChat = () => {
     }
   };
 
+  const handleClear = async () => {
+    try {
+      setIsClearing(true);
+      await clearMessages();
+      welcomeShownRef.current = false;
+    } catch (error) {
+      console.error('Error clearing messages:', error);
+    } finally {
+      setIsClearing(false);
+    }
+  };
+
   return (
     <div className="flex h-screen flex-col">
-      <header className="border-b border-border bg-background p-4">
+      <header className="border-b border-border bg-background p-4 flex justify-between items-center">
         <h1 className="text-xl font-semibold text-white">{game.title} Rules</h1>
+        <Button 
+          variant="destructive" 
+          size="sm"
+          onClick={handleClear}
+          disabled={isClearing || loading}
+          className="flex items-center gap-2"
+        >
+          {isClearing ? (
+            <Loader2 size={16} className="animate-spin" />
+          ) : (
+            <Trash2 size={16} />
+          )}
+          Clear Chat
+        </Button>
       </header>
 
       {/* Main chat container with reverse scroll */}
