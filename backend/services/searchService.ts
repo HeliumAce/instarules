@@ -3,6 +3,8 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 // Import the main Chunk type
 import type { Chunk } from '../utils/markdownProcessor.js';
+import OpenAI from 'openai';
+import 'dotenv/config';
 
 // Define the structure of the search results, matching the SQL function's return table
 export interface ArcsRuleSearchResult {
@@ -11,13 +13,6 @@ export interface ArcsRuleSearchResult {
     metadata: Chunk['metadata']; // Use the metadata type from the imported Chunk interface
     similarity: number;
 }
-
-// Define the expected structure of the data returned by the Edge Function
-interface EmbeddingResponse {
-    embedding?: number[];
-    error?: string;
-}
-
 
 // Initialize Supabase client (ensure environment variables are set)
 // Use Service Role Key for backend operations
@@ -32,15 +27,20 @@ if (!supabaseServiceKey) {
 }
 
 // Create a single Supabase client instance for this service
-// NOTE: In a real application, you might manage this client instance differently (e.g., dependency injection)
 const supabaseAdmin: SupabaseClient = createClient(supabaseUrl, supabaseServiceKey, {
     auth: {
-        // Automatically extend sessions on the server side
-        // Recommended for server-side operations like this
         autoRefreshToken: true,
         persistSession: false, // Don't persist auth sessions server-side for service roles
     }
 });
+
+// Initialize OpenAI client
+const openai = new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY,
+});
+
+// OpenAI embedding model to use
+const OPENAI_MODEL = 'text-embedding-3-small';
 
 /**
  * Performs a vector search on the Arcs rules embeddings.
@@ -58,38 +58,29 @@ export async function vectorSearchArcsRules(
 ): Promise<ArcsRuleSearchResult[]> {
     console.log(`Performing vector search for query: "${query}"`);
 
-    // 1. Generate embedding for the query using the Edge Function
+    // 1. Generate embedding for the query using OpenAI
     let queryEmbedding: number[];
     try {
-        const { data: embeddingData, error: embeddingError } = await supabaseAdmin.functions.invoke<EmbeddingResponse>(
-            'generate-embeddings', // Ensure this matches your Edge Function name
-            {
-                body: { input: query },
-            }
-        );
-
-        if (embeddingError) {
-            throw new Error(`Edge Function invocation error: ${embeddingError.message}`);
+        console.log(`Generating embedding using OpenAI ${OPENAI_MODEL}...`);
+        
+        const response = await openai.embeddings.create({
+            model: OPENAI_MODEL,
+            input: query,
+            encoding_format: "float",
+        });
+        
+        queryEmbedding = response.data[0].embedding;
+        
+        // Verify the embedding dimensions
+        if (queryEmbedding.length !== 1536) {
+            console.error(`Embedding dimension mismatch. Expected 1536, got ${queryEmbedding.length}`);
+            throw new Error(`Embedding dimension mismatch. Expected 1536, got ${queryEmbedding.length}`);
         }
-
-        if (!embeddingData || embeddingData.error || !embeddingData.embedding) {
-             const errorMsg = embeddingData?.error || 'Embedding generation failed: No embedding returned.';
-             console.error(`Error from generate-embeddings function: ${errorMsg}`);
-            throw new Error(errorMsg);
-        }
-
-        if (embeddingData.embedding.length !== 384) {
-             console.error(`Embedding dimension mismatch. Expected 384, got ${embeddingData.embedding.length}`);
-             throw new Error(`Embedding dimension mismatch. Expected 384, got ${embeddingData.embedding.length}`);
-        }
-
-
-        queryEmbedding = embeddingData.embedding;
-         console.log("Successfully generated query embedding.");
+        
+        console.log("Successfully generated query embedding.");
 
     } catch (error: any) {
         console.error('Failed to generate query embedding:', error);
-        // Re-throw a more specific error or handle as needed
         throw new Error(`Failed to generate embedding for query: ${error.message}`);
     }
 
