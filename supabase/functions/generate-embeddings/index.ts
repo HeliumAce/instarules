@@ -104,30 +104,76 @@ serve(async (req) => {
     console.log('Embeddings generated successfully.');
 
     // 6. Extract and Format Embeddings
-    // '.tolist()' converts the tensor output to a standard nested JS array
     const embeddings = output.tolist();
 
-    // Ensure the output structure is as expected (array of arrays for batches)
-    if (!Array.isArray(embeddings) || (textsToEmbed.length > 1 && !Array.isArray(embeddings[0]))) {
-      console.error("Unexpected embedding output format:", embeddings);
-      throw new Error("Failed to format embeddings correctly.");
+    if (!Array.isArray(embeddings)) {
+        console.error("FATAL: output.tolist() did not return an array:", embeddings);
+        throw new Error("Embedding output is not an array.");
     }
 
-    // If only one input text, the output might be a single array, wrap it
-    const finalEmbeddings = textsToEmbed.length === 1 && !Array.isArray(embeddings[0]) ? [embeddings] : embeddings;
+    // Ensure the output structure is as expected (array of arrays for batches, or single array for single input)
+    // Check if the first element exists and if IT is an array (for batch case)
+    const isLikelyBatchOutput = textsToEmbed.length > 1 && embeddings.length > 0 && Array.isArray(embeddings[0]);
+    // Check if it's a single embedding output (single array of numbers)
+    const isLikelySingleOutput = textsToEmbed.length === 1 && embeddings.length > 0 && typeof embeddings[0] === 'number';
+
+    let finalEmbeddings: number[][];
+
+    if (isLikelyBatchOutput) {
+        finalEmbeddings = embeddings as number[][]; // Already in correct batch format
+    } else if (isLikelySingleOutput) {
+        finalEmbeddings = [embeddings as number[]]; // Wrap single embedding in an outer array
+    } else if (textsToEmbed.length === 1 && embeddings.length === 0) {
+        // Handle case where model returns empty array for single input (shouldn't happen ideally)
+        console.warn("Warning: Model returned empty embedding for single input text.");
+        finalEmbeddings = [[]]; // Return array containing an empty embedding
+    } else if (textsToEmbed.length > 1 && embeddings.length === 0) {
+         console.warn("Warning: Model returned empty embedding array for batch input.");
+         finalEmbeddings = [];
+    } else {
+        // Fallback/Error case: Log the unexpected structure
+        console.error("Unexpected embedding output structure.", {
+            textsToEmbedLength: textsToEmbed.length,
+            embeddingsOutput: embeddings,
+        });
+        throw new Error("Failed to format embeddings due to unexpected structure.");
+    }
+
+    // Log right before returning
+    console.log(`Successfully processed. Returning ${finalEmbeddings.length} embedding(s).`);
 
     // 7. Return Successful Response
-    return new Response(JSON.stringify({ embeddings: finalEmbeddings }), {
+    const responseBody = JSON.stringify({ embeddings: finalEmbeddings });
+    return new Response(responseBody, {
       headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
       status: 200,
     });
 
   } catch (error) {
-    console.error('Error processing embedding request:', error);
+    // Improved logging in the catch block
+    console.error('Caught error in main handler:', error);
     const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+    const errorStack = error instanceof Error ? error.stack : 'No stack trace available';
+    console.error('Error Stack:', errorStack);
+
     const isClientError = error instanceof SyntaxError;
     const statusCode = isClientError ? 400 : 500;
-    return new Response(JSON.stringify({ error: `Internal Server Error: ${errorMessage}` }), {
+
+    // Ensure the error message itself can be stringified
+    let safeErrorMessage = 'Internal Server Error';
+    try {
+        // Use JSON.stringify on the error itself for more detail if possible
+        safeErrorMessage = JSON.stringify(error, Object.getOwnPropertyNames(error));
+    } catch (stringifyError) {
+         // Fallback if the error object can't be fully stringified
+         try {
+             safeErrorMessage = JSON.stringify(errorMessage);
+         } catch (innerStringifyError) {
+             console.error("Could not stringify the original error message or error object.");
+         }
+    }
+
+    return new Response(JSON.stringify({ error: `Processing failed: ${safeErrorMessage}` }), {
       status: statusCode,
       headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
     });
