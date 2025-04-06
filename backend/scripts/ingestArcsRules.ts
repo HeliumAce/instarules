@@ -1,5 +1,5 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import { processMarkdownAndChunk, Chunk } from '../utils/markdownProcessor.js'; // Import processor and Chunk type
+import { processMarkdownAndChunk, Chunk } from '../utils/markdownProcessorPrecise.js'; // Import processor and Chunk type
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
