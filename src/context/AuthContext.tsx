@@ -35,7 +35,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setUser(session?.user ?? null);
         
         if (session) {
-          lastExpiresAt.current = session.expires_at;
+          lastExpiresAt.current = session.expires_at === undefined ? null : session.expires_at;
           // Only redirect to dashboard if we're on the auth page
           if (location.pathname === '/auth') {
             navigate('/dashboard');
@@ -70,7 +70,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         const isRealSessionChange = session?.expires_at !== lastExpiresAt.current;
         
         if (event === 'SIGNED_IN' && isRealSessionChange) {
-          lastExpiresAt.current = session?.expires_at ?? null;
+          lastExpiresAt.current = session?.expires_at === undefined ? null : session?.expires_at;
           toast({
             title: "Welcome back!",
             description: "You have successfully signed in.",
