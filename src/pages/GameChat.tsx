@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { useParams, Navigate } from 'react-router-dom';
 import { SendHorizontal, Loader2, Trash2 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
@@ -11,23 +11,24 @@ import { useChatMessages } from '@/hooks/useChatMessages';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { ReloadIcon } from '@radix-ui/react-icons';
 import { useAuth } from '@/context/AuthContext';
+import { useToast } from "@/components/ui/use-toast";
 
 const GameChat = () => {
   const { gameId } = useParams<{ gameId: string }>();
   const { getGameById } = useGameContext();
   const { user } = useAuth();
+  const { toast } = useToast();
   const game = gameId ? getGameById(gameId) : undefined;
   const [input, setInput] = useState('');
-  const [isTyping, setIsTyping] = useState(false);
   const [isClearing, setIsClearing] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const { askQuestion } = useGameRules(gameId || '');
-  const { messages, loading, error, saveMessage, clearMessages } = useChatMessages(gameId || '');
+  const { rulesQuery, askMutation, getFallbackResponse } = useGameRules(gameId || '');
+  const { messages, loading: messagesLoading, error: messagesError, saveMessage, clearMessages } = useChatMessages(gameId || '');
   const welcomeShownRef = useRef(false);
 
   useEffect(() => {
     const showWelcomeMessage = async () => {
-      if (!welcomeShownRef.current && !loading && messages.length === 0 && game && user) {
+      if (!welcomeShownRef.current && !messagesLoading && messages.length === 0 && game && user) {
         welcomeShownRef.current = true;
         await saveMessage(
           `Hi! I'm your rules assistant for ${game.title}. Ask me any questions about the rules, setup, or gameplay.`,
@@ -37,7 +38,7 @@ const GameChat = () => {
     };
     
     showWelcomeMessage();
-  }, [loading, messages.length, game, saveMessage, user]);
+  }, [messagesLoading, messages.length, game, saveMessage, user]);
 
   useEffect(() => {
     scrollToBottom();
@@ -55,32 +56,38 @@ const GameChat = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
+  const handleMutationSuccess = useCallback(async (response: string) => {
+    await saveMessage(response, false);
+  }, [saveMessage]);
+
+  const handleMutationError = useCallback(async (error: Error) => {
+    console.error('Error in chat interaction:', error);
+    const errorMessage = error.message.includes('Rules not loaded') 
+      ? "The rules are still loading, please wait a moment."
+      : "Sorry, I couldn't process your question. Please try again.";
+    await saveMessage(errorMessage, false);
+    toast({
+      variant: "destructive",
+      title: "Chat Error",
+      description: errorMessage,
+    });
+  }, [saveMessage, toast]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!input.trim()) return;
+    const currentInput = input.trim();
+    if (!currentInput) return;
 
-    try {
-      // Save user message
-      await saveMessage(input, true);
-      setInput('');
-      setIsTyping(true);
+    await saveMessage(currentInput, true);
+    setInput('');
 
-      // Get AI response
-      const response = await askQuestion(input);
-      
-      // Save AI response
-      await saveMessage(response, false);
-    } catch (error) {
-      console.error('Error in chat interaction:', error);
-      
-      // Save error message
-      await saveMessage(
-        "Sorry, I couldn't process your question. Please try again.",
-        false
-      );
-    } finally {
-      setIsTyping(false);
-    }
+    askMutation.mutate(
+      { question: currentInput },
+      {
+        onSuccess: handleMutationSuccess,
+        onError: handleMutationError,
+      }
+    );
   };
 
   const handleClear = async () => {
@@ -88,12 +95,19 @@ const GameChat = () => {
       setIsClearing(true);
       await clearMessages();
       welcomeShownRef.current = false;
+      askMutation.reset();
     } catch (error) {
       console.error('Error clearing messages:', error);
     } finally {
       setIsClearing(false);
     }
   };
+
+  const isRulesLoading = rulesQuery.isLoading;
+  const isRulesError = rulesQuery.isError;
+  const isAsking = askMutation.isPending;
+  const rulesErrorMessage = rulesQuery.error?.message;
+  const askErrorMessage = askMutation.error?.message;
 
   return (
     <div className="flex h-screen flex-col">
@@ -103,7 +117,7 @@ const GameChat = () => {
           variant="destructive" 
           size="sm"
           onClick={handleClear}
-          disabled={isClearing || loading}
+          disabled={isClearing || messagesLoading || isAsking}
           className="flex items-center gap-2"
         >
           {isClearing ? (
@@ -115,22 +129,29 @@ const GameChat = () => {
         </Button>
       </header>
 
-      {/* Main chat container with reverse scroll */}
       <div className="flex-1 overflow-y-auto">
-        {/* Inner container to maintain bottom alignment and proper spacing */}
         <div className="flex min-h-full flex-col justify-end">
           <div className="mx-auto max-w-3xl space-y-6 px-4 w-full py-4">
-            {error && (
+            {messagesError && (
               <Alert variant="destructive">
                 <AlertDescription>
-                  Error loading messages. Please try refreshing the page.
+                  Error loading previous messages. Please try refreshing.
                 </AlertDescription>
               </Alert>
             )}
             
-            {loading ? (
+            {isRulesError && (
+              <Alert variant="destructive">
+                <AlertDescription>
+                  Error loading game rules: {rulesErrorMessage || 'Unknown error'}
+                </AlertDescription>
+              </Alert>
+            )}
+            
+            {messagesLoading || isRulesLoading ? (
               <div className="flex justify-center py-4">
                 <ReloadIcon className="h-6 w-6 animate-spin" />
+                <span className="ml-2">Loading {messagesLoading ? 'messages' : 'rules'}...</span>
               </div>
             ) : (
               <>
@@ -162,7 +183,7 @@ const GameChat = () => {
               </>
             )}
             
-            {isTyping && (
+            {isAsking && (
               <div className="flex justify-start">
                 <div className="w-full rounded-xl bg-muted p-4">
                   <div className="flex space-x-2">
@@ -185,17 +206,21 @@ const GameChat = () => {
             <Input
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder={isTyping ? "Processing your question..." : "Ask about rules, setup, or gameplay..."}
+              placeholder={
+                isRulesLoading ? "Loading rules..." 
+                : isAsking ? "Processing your question..." 
+                : "Ask about rules, setup, or gameplay..."
+              }
               className="flex-1 bg-muted text-foreground pr-12"
-              disabled={isTyping}
+              disabled={isAsking || isRulesLoading || isRulesError || !rulesQuery.data}
             />
             <Button 
               type="submit" 
-              disabled={isTyping || !input.trim()} 
+              disabled={isAsking || isRulesLoading || isRulesError || !input.trim() || !rulesQuery.data}
               className="absolute right-2 p-2 h-auto"
               variant="ghost"
             >
-              {isTyping ? (
+              {isAsking ? (
                 <Loader2 size={18} className="animate-spin" />
               ) : (
                 <SendHorizontal size={18} />
@@ -208,7 +233,6 @@ const GameChat = () => {
   );
 };
 
-// Helper for className conditionals
 function cn(...classes: (string | boolean | undefined)[]) {
   return classes.filter(Boolean).join(' ');
 }

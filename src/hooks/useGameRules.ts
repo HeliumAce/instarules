@@ -1,62 +1,29 @@
-import { useState } from 'react';
-import LLMService from '@/services/LLMService';
-import RulesService from '@/services/RulesService';
+import { useQuery, useMutation, UseQueryResult, UseMutationResult } from '@tanstack/react-query';
+import { getLLMCompletion } from '@/services/LLMService';
+import { fetchGameRules, findRelevantSections } from '@/services/RulesService';
 import { gameResponses } from '@/data/games';
 
-export function useGameRules(gameId: string) {
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  
-  const askQuestion = async (question: string): Promise<string> => {
-    setLoading(true);
-    setError(null);
-    
-    try {
-      // First try to load game rules
-      try {
-        const rules = await RulesService.loadRules(gameId);
-        
-        if (rules && rules.sections) {
-          // Find relevant sections
-          const relevantSections = RulesService.findRelevantSections(rules, question);
-          
-          if (relevantSections.length > 0) {
-            // Build prompt with relevant sections
-            const prompt = buildPrompt(rules.game, question, relevantSections);
-            
-            // Get response from LLM
-            const response = await LLMService.getCompletion(prompt);
-            if (response) return response;
-          }
-        }
-      } catch (err) {
-        // console.warn('Failed to load rules from JSON, falling back to static responses:', err);
-      }
-      
-      // Fall back to static responses if rules loading fails
-      const gameSpecificResponses = gameResponses[gameId] || gameResponses.default;
-      const normalizedQuery = question.toLowerCase();
-      
-      for (const [keyword, response] of Object.entries(gameSpecificResponses)) {
-        if (keyword !== 'default' && normalizedQuery.includes(keyword)) {
-          return response;
-        }
-      }
-      
-      return gameSpecificResponses.default;
-      
-    } catch (err: any) {
-      const errorMsg = err.message || 'An error occurred';
-      // console.error('Error in askQuestion:', errorMsg, err);
-      setError(errorMsg);
-      return "I'm sorry, I couldn't find information about that in the game rules.";
-    } finally {
-      setLoading(false);
-    }
-  };
-  
-  const buildPrompt = (gameName: string, question: string, sections: any[]): string => {
-    return `
+// Define the structure for the data returned by the rules query
+interface GameRulesData {
+  game: string;
+  sections: any[]; // Keeping sections flexible for now
+  // Add other potential top-level keys like cards, faq, errata if needed
+}
+
+// Define the structure for the variables passed to the mutation
+interface AskQuestionVariables {
+  question: string;
+}
+
+// Define the structure for the returned value of the hook
+interface UseGameRulesReturn {
+  rulesQuery: UseQueryResult<GameRulesData, Error>;
+  askMutation: UseMutationResult<string, Error, AskQuestionVariables, unknown>;
+  getFallbackResponse: (question: string) => string;
+}
+
+const buildPrompt = (gameName: string, question: string, sections: any[]): string => {
+  return `
 You are a helpful assistant for the board game "${gameName}".
 
 The user asked: "${question}"
@@ -94,11 +61,61 @@ ${sections.map(section => {
 
 Remember that the user is in the middle of a game and needs clear, direct answers.
 `;
+};
+
+export function useGameRules(gameId: string): UseGameRulesReturn {
+
+  // Query to fetch the game rules data
+  const rulesQuery = useQuery<GameRulesData, Error>({
+    queryKey: ['gameRules', gameId], // Unique key for caching
+    queryFn: () => fetchGameRules(gameId),
+    enabled: !!gameId, // Only run query if gameId is provided
+    staleTime: Infinity, // Rules data is static, cache indefinitely
+    gcTime: Infinity,    // Keep in cache indefinitely
+  });
+
+  // Mutation to handle asking a question and getting an LLM response
+  const askMutation = useMutation<string, Error, AskQuestionVariables>({
+    mutationFn: async ({ question }: AskQuestionVariables) => {
+      // Ensure rules data is loaded before proceeding
+      if (!rulesQuery.data || !rulesQuery.data.sections) {
+        // This case should ideally be handled by disabling the ask button 
+        // if rulesQuery.isLoading or rulesQuery.isError, but throw just in case.
+        throw new Error('Rules not loaded yet.'); 
+      }
+
+      const rules = rulesQuery.data;
+      const relevantSections = findRelevantSections(rules, question);
+
+      if (relevantSections.length > 0) {
+        const prompt = buildPrompt(rules.game, question, relevantSections);
+        // Call the refactored service function
+        const response = await getLLMCompletion({ prompt }); 
+        return response;
+      } else {
+        // If no relevant sections found, return a specific message or fallback
+        return getFallbackResponse(question); // Use fallback logic
+      }
+    },
+    // Optional: onSuccess, onError, onSettled callbacks for side-effects
+  });
+
+  // Function to get the static fallback response
+  const getFallbackResponse = (question: string): string => {
+    const gameSpecificResponses = gameResponses[gameId] || gameResponses.default;
+    const normalizedQuery = question.toLowerCase();
+    
+    for (const [keyword, response] of Object.entries(gameSpecificResponses)) {
+      if (keyword !== 'default' && normalizedQuery.includes(keyword)) {
+        return response;
+      }
+    }
+    return gameSpecificResponses.default || "I couldn't find specific information for that question.";
   };
-  
+
   return {
-    askQuestion,
-    loading,
-    error
+    rulesQuery,     // Expose the full query state
+    askMutation,    // Expose the full mutation state and trigger
+    getFallbackResponse // Expose fallback logic for use when mutation fails or finds no sections
   };
 } 
