@@ -1,13 +1,22 @@
 import { useQuery, useMutation, UseQueryResult, UseMutationResult } from '@tanstack/react-query';
 import { getLLMCompletion } from '@/services/LLMService';
-import { fetchGameRules, findRelevantSections } from '@/services/RulesService';
+import { fetchGameRules, fetchRelevantSectionsFromVectorDb } from '@/services/RulesService';
 import { gameResponses } from '@/data/games';
+import { useSupabase } from '@/context/SupabaseContext';
 
 // Define the structure for the data returned by the rules query
 interface GameRulesData {
   game: string;
-  sections: any[]; // Keeping sections flexible for now
-  // Add other potential top-level keys like cards, faq, errata if needed
+  // We might not need sections loaded by default anymore if using vector search only
+  // sections: any[]; 
+}
+
+// Define the structure for vector search results (matches the service function)
+interface VectorSearchResult {
+  id: string;
+  content: string;
+  metadata: Record<string, any>;
+  similarity: number;
 }
 
 // Define the structure for the variables passed to the mutation
@@ -22,25 +31,24 @@ interface UseGameRulesReturn {
   getFallbackResponse: (question: string) => string;
 }
 
-const buildPrompt = (gameName: string, question: string, sections: any[]): string => {
+const buildPrompt = (gameName: string, question: string, sections: VectorSearchResult[]): string => {
+  // Format the context from vector search results
+  const context = sections
+    .map(section => {
+      // Attempt to create a title from metadata, fallback if needed
+      const title = section.metadata?.heading_path?.join(' > ') || section.metadata?.card || 'Relevant Rule Snippet';
+      return `## ${title}\n${section.content}`;
+    })
+    .join('\n\n');
+    
   return `
 You are a helpful assistant for the board game "${gameName}".
 
 The user asked: "${question}"
 
-Here are the relevant rules from the game rulebook:
+Here are the most relevant rules snippets found for that question:
 
-${sections.map(section => {
-  let content = `## ${section.title}\n${section.content}`;
-  
-  if (section.subsections && section.subsections.length > 0) {
-    content += '\n\n' + section.subsections.map((sub: any) => 
-      `### ${sub.title}\n${sub.content}`
-    ).join('\n\n');
-  }
-  
-  return content;
-}).join('\n\n')}
+${context}
 
 **Your Role:** You are an expert rules assistant for the board game Arcs. Your goal is to provide accurate, concise answers based *only* on the provided text snippets.
 
@@ -48,7 +56,7 @@ ${sections.map(section => {
 
 1.  **Answer Directly:** Get straight to the answer using the provided context.
 2.  **Answer Succintly:** Answer the question as succintly as possible. Do not attempt to answer related questions.
-2.  **Prioritize Sources:** If context includes errata or official FAQ snippets, prioritize their information over rulebook snippets if they address the same point. State if errata overrides a rule.
+2.  **Prioritize Sources:** If context includes errata or official FAQ snippets (check metadata if available), prioritize their information over rulebook snippets if they address the same point. State if errata overrides a rule.
 3.  **Synthesize Information:** If multiple snippets are relevant, combine them into a coherent answer.
 4.  **Handle Ambiguity/Conflict:** If the provided snippets are contradictory (and not resolved by errata/FAQ priority) or insufficient to fully answer the question, clearly state that the rules are unclear or the information isn't present in the provided context. Do not guess or infer rules.
 5.  **Formatting:**
@@ -64,40 +72,47 @@ Remember that the user is in the middle of a game and needs clear, direct answer
 };
 
 export function useGameRules(gameId: string): UseGameRulesReturn {
+  // Get Supabase client via hook - this is safe here
+  const { supabase } = useSupabase(); 
 
-  // Query to fetch the game rules data
+  // Query to fetch basic game info (e.g., game name). 
+  // We might not need the full rules sections if only using vector search.
+  // Consider creating a lighter fetch function if fetchGameRules loads too much.
   const rulesQuery = useQuery<GameRulesData, Error>({
-    queryKey: ['gameRules', gameId], // Unique key for caching
-    queryFn: () => fetchGameRules(gameId),
-    enabled: !!gameId, // Only run query if gameId is provided
-    staleTime: Infinity, // Rules data is static, cache indefinitely
-    gcTime: Infinity,    // Keep in cache indefinitely
+    queryKey: ['gameBaseInfo', gameId], // Adjusted key if only loading base info
+    queryFn: async () => { 
+        // If fetchGameRules loads everything, extract just the game name?
+        // Or create a new service function fetchGameBaseInfo(gameId)
+        const rules = await fetchGameRules(gameId); 
+        return { game: rules?.game || 'Unknown Game' }; // Return only needed info
+    },
+    enabled: !!gameId, 
+    staleTime: Infinity, 
+    gcTime: Infinity,    
   });
 
-  // Mutation to handle asking a question and getting an LLM response
+  // Mutation to ask question using vector search for context
   const askMutation = useMutation<string, Error, AskQuestionVariables>({
     mutationFn: async ({ question }: AskQuestionVariables) => {
-      // Ensure rules data is loaded before proceeding
-      if (!rulesQuery.data || !rulesQuery.data.sections) {
-        // This case should ideally be handled by disabling the ask button 
-        // if rulesQuery.isLoading or rulesQuery.isError, but throw just in case.
-        throw new Error('Rules not loaded yet.'); 
+      // Ensure game name is available (needed for prompt)
+      const gameName = rulesQuery.data?.game;
+      if (!gameName) {
+         throw new Error('Game information not loaded yet.'); 
       }
 
-      const rules = rulesQuery.data;
-      const relevantSections = findRelevantSections(rules, question);
+      // Pass the supabase client instance to the service function
+      const relevantSections = await fetchRelevantSectionsFromVectorDb(supabase, question);
 
-      if (relevantSections.length > 0) {
-        const prompt = buildPrompt(rules.game, question, relevantSections);
-        // Call the refactored service function
+      if (relevantSections && relevantSections.length > 0) {
+        // Use vector search results to build prompt
+        const prompt = buildPrompt(gameName, question, relevantSections);
         const response = await getLLMCompletion({ prompt }); 
         return response;
       } else {
-        // If no relevant sections found, return a specific message or fallback
-        return getFallbackResponse(question); // Use fallback logic
+        // Fallback if vector search returns no results
+        return getFallbackResponse(question); 
       }
     },
-    // Optional: onSuccess, onError, onSettled callbacks for side-effects
   });
 
   // Function to get the static fallback response
@@ -114,8 +129,8 @@ export function useGameRules(gameId: string): UseGameRulesReturn {
   };
 
   return {
-    rulesQuery,     // Expose the full query state
-    askMutation,    // Expose the full mutation state and trigger
-    getFallbackResponse // Expose fallback logic for use when mutation fails or finds no sections
+    rulesQuery,     
+    askMutation,    
+    getFallbackResponse 
   };
 } 

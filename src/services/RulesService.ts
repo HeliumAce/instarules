@@ -1,3 +1,7 @@
+import { useSupabase } from '../context/SupabaseContext'; // Corrected path
+import axios from 'axios'; // Ensure axios is imported if not already
+import { SupabaseClient } from '@supabase/supabase-js'; // Import SupabaseClient type
+
 // Helper to load HTML file content
 const loadHtmlFile = (url: string): Promise<string> => {
   return new Promise((resolve, reject) => {
@@ -167,7 +171,7 @@ export const fetchGameRules = async (gameId: string): Promise<any> => {
 }
 
 /**
- * Finds relevant sections, cards, FAQs, or errata based on a query.
+ * Finds relevant sections, cards, FAQs, or errata based on a query using local keyword matching.
  * Scores content items based on keyword matching and returns the top results.
  */
 export const findRelevantSections = (rules: any, query: string): any[] => {
@@ -305,4 +309,71 @@ const findSectionByName = (sections: any[], name: string): any | null => {
      }
   }
   return null;
-} 
+}
+
+// Type for the vector search results expected from the edge function
+interface VectorSearchResult {
+  id: string;
+  content: string;
+  metadata: Record<string, any>;
+  similarity: number;
+}
+
+/**
+ * Fetches relevant rule sections by calling the Supabase vector-search edge function.
+ * Requires the Supabase client instance to get the user's auth token.
+ * @param supabase - The Supabase client instance.
+ * @param query - The user's search query.
+ */
+export const fetchRelevantSectionsFromVectorDb = async (
+  supabase: SupabaseClient, 
+  query: string
+): Promise<VectorSearchResult[]> => {
+  const functionUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/vector-search`;
+  
+  // Get session token from the passed client instance
+  let accessToken: string | null = null;
+  try {
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    if (sessionError) {
+      throw sessionError;
+    }
+    if (!session) {
+       throw new Error("User not authenticated for vector search.");
+    }
+    accessToken = session.access_token;
+  } catch (error: any) {
+    console.error("Could not get session for vector search:", error);
+    throw new Error(`Authentication error: ${error.message || 'Unknown error'}`); 
+  }
+
+  try {
+    const response = await axios.post(
+      functionUrl,
+      { query },
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${accessToken}`,
+          'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY 
+        },
+      }
+    );
+
+    if (response.status !== 200) {
+      throw new Error(`Vector search function failed with status ${response.status}: ${response.statusText}`);
+    }
+
+    if (!Array.isArray(response.data)) {
+        console.error("Vector search returned non-array data:", response.data);
+        throw new Error("Received invalid data format from vector search.");
+    }
+
+    return response.data as VectorSearchResult[];
+
+  } catch (error: any) {
+    console.error("Error calling vector search function:", error);
+    const errorData = error.response?.data?.error;
+    throw new Error(`Failed to get relevant sections: ${errorData || error.message || 'Unknown error'}`);
+  }
+}; 
