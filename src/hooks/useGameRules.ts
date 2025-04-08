@@ -7,10 +7,7 @@ export function useGameRules(gameId: string) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
-  console.log('useGameRules initialized with gameId:', gameId);
-  
   const askQuestion = async (question: string): Promise<string> => {
-    console.log('askQuestion called with:', question);
     setLoading(true);
     setError(null);
     
@@ -33,7 +30,7 @@ export function useGameRules(gameId: string) {
           }
         }
       } catch (err) {
-        console.warn('Failed to load rules from JSON, falling back to static responses:', err);
+        // console.warn('Failed to load rules from JSON, falling back to static responses:', err);
       }
       
       // Fall back to static responses if rules loading fails
@@ -50,7 +47,7 @@ export function useGameRules(gameId: string) {
       
     } catch (err: any) {
       const errorMsg = err.message || 'An error occurred';
-      console.error('Error in askQuestion:', errorMsg, err);
+      // console.error('Error in askQuestion:', errorMsg, err);
       setError(errorMsg);
       return "I'm sorry, I couldn't find information about that in the game rules.";
     } finally {

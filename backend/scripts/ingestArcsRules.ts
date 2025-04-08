@@ -33,20 +33,16 @@ async function findValidMarkdownPath() {
   // First check the original path
   try {
     await fs.access(MARKDOWN_FILE_PATH);
-    console.log(`Found markdown file at: ${MARKDOWN_FILE_PATH}`);
     return MARKDOWN_FILE_PATH;
   } catch (error) {
-    console.log(`File not found at ${MARKDOWN_FILE_PATH}, trying alternative paths...`);
   }
 
   // Try alternative paths
   for (const path of ALTERNATIVE_PATHS) {
     try {
       await fs.access(path);
-      console.log(`Found markdown file at: ${path}`);
       return path;
     } catch (error) {
-      console.log(`File not found at ${path}`);
     }
   }
 
@@ -86,35 +82,27 @@ async function ingestData() {
     try {
         // Find the valid markdown file path
         const markdownFilePath = await findValidMarkdownPath();
-        console.log(`Starting ingestion process for: ${markdownFilePath}`);
 
         // 1. Read and process Markdown file
-        console.log('Reading and chunking Markdown file...');
         const markdownContent = await fs.readFile(markdownFilePath, 'utf-8');
         const chunks = processMarkdownAndChunk(markdownContent);
         if (chunks.length === 0) {
-            console.log("No chunks generated from Markdown file. Exiting.");
             return;
         }
-        console.log(`Generated ${chunks.length} chunks.`);
 
         // 2. Optional: Clear existing data
         if (CLEAR_TABLE_BEFORE_INGEST) {
-            console.log(`Clearing existing data from ${EMBEDDINGS_TABLE_NAME}...`);
             const { error: deleteError } = await supabaseAdmin
                 .from(EMBEDDINGS_TABLE_NAME)
                 .delete()
                 .neq('id', '00000000-0000-0000-0000-000000000000'); // Trick to delete all rows
 
             if (deleteError) {
-                console.error('Error clearing table:', deleteError);
                 throw new Error(`Failed to clear table: ${deleteError.message}`);
             }
-            console.log('Table cleared successfully.');
         }
 
         // 3. Generate embeddings and prepare data for insertion
-        console.log(`Generating embeddings using OpenAI ${OPENAI_MODEL}...`);
         const rowsToInsert: DbEmbeddingRow[] = [];
         let successCount = 0;
         let errorCount = 0;
@@ -122,7 +110,6 @@ async function ingestData() {
         // Process chunks in batches
         for (let i = 0; i < chunks.length; i += EMBEDDING_BATCH_SIZE) {
             const batchChunks = chunks.slice(i, i + EMBEDDING_BATCH_SIZE);
-            console.log(`Processing batch ${Math.floor(i / EMBEDDING_BATCH_SIZE) + 1}/${Math.ceil(chunks.length / EMBEDDING_BATCH_SIZE)}...`);
             
             try {
                 const batchTexts = batchChunks.map(chunk => chunk.content);
@@ -143,52 +130,32 @@ async function ingestData() {
                     });
                     successCount++;
                 });
-                
-                console.log(`Successfully generated embeddings for batch ${Math.floor(i / EMBEDDING_BATCH_SIZE) + 1}`);
             } catch (error: any) {
-                console.error(`Error generating embeddings for batch starting at chunk ${i + 1}:`, error.message);
                 errorCount += batchChunks.length;
             }
             
-            // Progress indicator
-            const percentComplete = Math.round(((i + batchChunks.length) / chunks.length) * 100);
-            console.log(`Progress: ${Math.min(i + batchChunks.length, chunks.length)}/${chunks.length} chunks (${percentComplete}%)`);
-            
             // Add a small delay between batches to avoid rate limiting
             if (i + EMBEDDING_BATCH_SIZE < chunks.length) {
-                console.log('Waiting 1 second before processing next batch...');
                 await new Promise(resolve => setTimeout(resolve, 1000));
             }
         }
 
-        console.log(`Embedding generation complete. Success: ${successCount}, Errors: ${errorCount}`);
-
         // 4. Insert data into Supabase
         if (rowsToInsert.length > 0) {
-            console.log(`Inserting ${rowsToInsert.length} rows into ${EMBEDDINGS_TABLE_NAME}...`);
-
             // Insert in batches for better performance
             const INSERT_BATCH_SIZE = 50; // Supabase recommends batches of < 1000
             for (let i = 0; i < rowsToInsert.length; i += INSERT_BATCH_SIZE) {
                 const batch = rowsToInsert.slice(i, i + INSERT_BATCH_SIZE);
-                console.log(`Inserting batch ${Math.floor(i / INSERT_BATCH_SIZE) + 1}/${Math.ceil(rowsToInsert.length / INSERT_BATCH_SIZE)}...`);
                 const { error: insertError } = await supabaseAdmin
                     .from(EMBEDDINGS_TABLE_NAME)
                     .insert(batch);
 
                 if (insertError) {
-                    console.error('Error inserting batch:', insertError);
                     throw new Error(`Failed to insert batch: ${insertError.message}`);
                 }
             }
-            console.log('Data insertion complete.');
-        } else {
-            console.log('No valid embeddings generated, nothing to insert.');
         }
-
-        console.log('Ingestion process finished successfully.');
     } catch (error: any) {
-        console.error('Ingestion process failed:', error.message);
         process.exit(1); // Exit with error code
     }
 }

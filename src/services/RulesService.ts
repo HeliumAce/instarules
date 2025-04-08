@@ -2,45 +2,45 @@ class RulesService {
   private cachedRules: Map<string, any> = new Map();
   
   constructor() {
-    console.log('RulesService initialized');
+    // console.log('RulesService initialized');
   }
   
   async loadRules(gameId: string): Promise<any> {
-    console.log('loadRules called for gameId:', gameId);
+    // console.log('loadRules called for gameId:', gameId);
     
     if (this.cachedRules.has(gameId)) {
-      console.log('Returning cached rules for gameId:', gameId);
+      // console.log('Returning cached rules for gameId:', gameId);
       return this.cachedRules.get(gameId);
     }
     
     try {
       // Special case for Arcs which now uses multiple files
       if (gameId === 'arcs') {
-        console.log('Loading Arcs data from multiple files');
+        // console.log('Loading Arcs data from multiple files');
         return await this.loadArcsRules();
       }
       
       // For other games, use the original approach
       const path = `@/data/games/${gameId}/${gameId}-base.json`;
-      console.log('Attempting to load rules from:', path);
+      // console.log('Attempting to load rules from:', path);
       
       // Dynamic import of the JSON file
-      console.log('Executing dynamic import');
+      // console.log('Executing dynamic import');
       const rules = await import(/* @vite-ignore */ `@/data/games/${gameId}/${gameId}-base.json`);
-      console.log('Rules loaded:', rules ? 'Yes, keys: ' + Object.keys(rules).join(', ') : 'No');
+      // console.log('Rules loaded:', rules ? 'Yes, keys: ' + Object.keys(rules).join(', ') : 'No');
       
       this.cachedRules.set(gameId, rules.default || rules);
-      console.log('Rules cached for gameId:', gameId);
+      // console.log('Rules cached for gameId:', gameId);
       return this.cachedRules.get(gameId);
     } catch (error) {
-      console.error(`Failed to load rules for game ${gameId}:`, error);
+      // console.error(`Failed to load rules for game ${gameId}:`, error);
       throw new Error(`Game rules not found for ${gameId}`);
     }
   }
   
   private async loadArcsRules(): Promise<any> {
     try {
-      console.log('Loading Arcs rules from multiple files');
+      // console.log('Loading Arcs rules from multiple files');
       
       // Load JSON files
       const cardsBasePromise = import('@/data/games/arcs/cards-base.json');
@@ -52,7 +52,7 @@ class RulesService {
       const faqBlightedReachPromise = import('@/data/games/arcs/faq-blighted-reach.json');
       
       // Load HTML content using XMLHttpRequest
-      console.log('Loading HTML files with XMLHttpRequest');
+      // console.log('Loading HTML files with XMLHttpRequest');
       const rulesBasePromise = this.loadHtmlFile('/src/data/games/arcs/rules-base.html');
       const rulesBlightedReachPromise = this.loadHtmlFile('/src/data/games/arcs/rules-blighted-reach.html');
       
@@ -97,10 +97,10 @@ class RulesService {
       };
       
       this.cachedRules.set('arcs', combinedRules);
-      console.log('Arcs rules combined and cached');
+      // console.log('Arcs rules combined and cached');
       return combinedRules;
     } catch (error) {
-      console.error('Failed to load Arcs rules from multiple files:', error);
+      // console.error('Failed to load Arcs rules from multiple files:', error);
       throw new Error('Failed to load Arcs rules');
     }
   }
@@ -114,12 +114,12 @@ class RulesService {
         if (xhr.status >= 200 && xhr.status < 300) {
           resolve(xhr.responseText);
         } else {
-          console.error(`XHR Error: Status ${xhr.status} for URL ${url}`);
+          // console.error(`XHR Error: Status ${xhr.status} for URL ${url}`);
           reject(new Error(`Failed to load HTML file: ${url} (Status: ${xhr.status})`));
         }
       };
       xhr.onerror = () => {
-         console.error(`XHR Error: Network error for URL ${url}`);
+         // console.error(`XHR Error: Network error for URL ${url}`);
          reject(new Error(`Network error loading HTML file: ${url}`));
       }
       xhr.send();
@@ -129,7 +129,7 @@ class RulesService {
   // Helper to process structured FAQ JSON (faq-base, faq-blighted-reach)
   private processStructuredFaq(faqData: any, sourceType: string): any[] {
     if (!faqData || !Array.isArray(faqData.clarifications)) {
-       console.warn(`Unexpected FAQ structure for ${sourceType}:`, faqData);
+       // console.warn(`Unexpected FAQ structure for ${sourceType}:`, faqData);
       return [];
     }
     // Map clarifications to a common structure expected by findRelevantSections if needed
@@ -144,7 +144,7 @@ class RulesService {
   // Helper to process structured Errata JSON
   private processErrata(errataData: any): any[] {
     if (!Array.isArray(errataData)) {
-      console.warn(`Unexpected Errata structure:`, errataData);
+      // console.warn(`Unexpected Errata structure:`, errataData);
       return [];
     }
     // Map errata to a common structure
@@ -157,7 +157,7 @@ class RulesService {
   
   // Helper to process the combined HTML content
   private processArcsHtmlContent(baseRulesHtml: string, blightedReachHtml: string): any[] {
-    console.log('Processing HTML content for Arcs rules');
+    // console.log('Processing HTML content for Arcs rules');
     const sections: any[] = [];
     
     // Process base rules HTML
@@ -166,7 +166,7 @@ class RulesService {
     // Process blighted reach rules HTML
     sections.push(...this.extractSectionsFromHtml(blightedReachHtml, 'Blighted Reach Rules'));
     
-     console.log(`Extracted ${sections.length} sections from HTML`);
+     // console.log(`Extracted ${sections.length} sections from HTML`);
     return sections;
   }
   
@@ -226,9 +226,9 @@ class RulesService {
   }
   
   findRelevantSections(rules: any, query: string): any[] {
-    console.log(`Finding relevant sections for query: "${query}"`);
+    // console.log(`Finding relevant sections for query: "${query}"`);
     if (!rules || !Array.isArray(rules.sections)) {
-        console.error('Invalid rules object passed to findRelevantSections:', rules);
+        // console.error('Invalid rules object passed to findRelevantSections:', rules);
         return [];
     }
     
@@ -236,7 +236,7 @@ class RulesService {
      if (!normalizedQuery) return []; // Avoid processing empty queries
     
     const queryWords = new Set(normalizedQuery.split(/\W+/).filter(word => word.length > 2)); // Use Set for efficiency
-     console.log('Query words:', Array.from(queryWords));
+     // console.log('Query words:', Array.from(queryWords));
     
     const scoredSections: { section: any, score: number }[] = [];
     
@@ -247,7 +247,7 @@ class RulesService {
          ...(rules.faq || []).map((faqItem: any) => ({ title: `FAQ: ${faqItem.card || faqItem.section || faqItem.title}`, content: faqItem.text || (Array.isArray(faqItem.faq) ? faqItem.faq.map((qa: any) => `Q: ${qa.q}\\nA: ${qa.a}`).join('\\n') : ''), sourceType: faqItem.sourceType || 'FAQ' })),
          ...(rules.errata || []).map((errataItem: any) => ({ title: errataItem.title || `Errata: ${errataItem.card || 'General'}`, content: errataItem.content || '', sourceType: 'Errata' }))
      ];
-     console.log(`Total content items to search: ${allContent.length}`);
+     // console.log(`Total content items to search: ${allContent.length}`);
     
     // Score all content items based on word matches
      allContent.forEach((item: any, index: number) => {
@@ -356,7 +356,7 @@ class RulesService {
       .slice(0, 5) // Increased from 3 to potentially include card/faq data
       .map(item => item.section);
 
-      console.log(`Found ${topSections.length} relevant sections:`, topSections.map(s => s.title));
+      // console.log(`Found ${topSections.length} relevant sections:`, topSections.map(s => s.title));
       return topSections;
   }
   
