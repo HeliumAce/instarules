@@ -60,17 +60,16 @@ const AppSidebar = () => {
           <SidebarMenu>
             <SidebarMenuItem>
               <SidebarMenuButton
-                asChild
                 className={cn(
                   "transition-all flex items-center gap-3 rounded-md px-3 py-2 hover:bg-muted",
                   location.pathname === '/dashboard' && "bg-accent text-accent-foreground"
                 )}
                 tooltip="Dashboard"
+                onClick={() => navigate('/dashboard')}
+                isActive={location.pathname === '/dashboard'}
               >
-                <button onClick={() => navigate('/dashboard')}>
-                  <Home size={18} />
-                  <span>Dashboard</span>
-                </button>
+                <Home size={18} />
+                <span>Dashboard</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>
@@ -92,23 +91,33 @@ const AppSidebar = () => {
                         isGameSelected(game.id) && "bg-accent text-accent-foreground"
                       )}
                       onClick={() => navigate(`/games/${game.id}`)}
+                      tooltip={game.title}
                     >
                       <span className="flex-1 truncate text-left">{game.title}</span>
-                      <button
+                      <span
+                        role="button"
+                        aria-label={game.isFavorite ? "Remove from favorites" : "Add to favorites"}
+                        tabIndex={0}
                         onClick={(e) => {
                           e.stopPropagation();
                           toggleFavorite(game.id);
                         }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.stopPropagation();
+                            toggleFavorite(game.id);
+                          }
+                        }}
                         className={cn(
-                          "ml-2",
-                          game.isFavorite ? "text-yellow-400" : "text-gray-400 hover:text-gray-300"
+                          "ml-2 p-1 rounded-md focus:outline-none focus:ring-2 focus:ring-ring",
+                          game.isFavorite ? "text-yellow-400" : "text-gray-400 hover:text-yellow-400"
                         )}
                       >
                         <Star
                           size={16}
                           fill={game.isFavorite ? "currentColor" : "none"}
                         />
-                      </button>
+                      </span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 ))}
@@ -130,23 +139,33 @@ const AppSidebar = () => {
                       isGameSelected(game.id) && "bg-accent text-accent-foreground"
                     )}
                     onClick={() => navigate(`/games/${game.id}`)}
+                    tooltip={game.title}
                   >
                     <span className="flex-1 truncate text-left">{game.title}</span>
-                    <button
+                    <span
+                      role="button"
+                      aria-label={game.isFavorite ? "Remove from favorites" : "Add to favorites"}
+                      tabIndex={0}
                       onClick={(e) => {
                         e.stopPropagation();
                         toggleFavorite(game.id);
                       }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.stopPropagation();
+                          toggleFavorite(game.id);
+                        }
+                      }}
                       className={cn(
-                        "ml-2",
-                        game.isFavorite ? "text-yellow-400" : "text-gray-400 hover:text-gray-300"
+                        "ml-2 p-1 rounded-md focus:outline-none focus:ring-2 focus:ring-ring",
+                        game.isFavorite ? "text-yellow-400" : "text-gray-400 hover:text-yellow-400"
                       )}
                     >
                       <Star
                         size={16}
                         fill={game.isFavorite ? "currentColor" : "none"}
                       />
-                    </button>
+                    </span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
