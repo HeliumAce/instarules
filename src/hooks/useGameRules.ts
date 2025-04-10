@@ -97,11 +97,39 @@ export function useGameRules(gameId: string): UseGameRulesReturn {
       // Ensure game name is available (needed for prompt)
       const gameName = rulesQuery.data?.game;
       if (!gameName) {
-         throw new Error('Game information not loaded yet.'); 
+        throw new Error('Game information not loaded yet.'); 
       }
 
       // Pass the supabase client instance to the service function
-      const relevantSections = await fetchRelevantSectionsFromVectorDb(supabase, question);
+      let relevantSections = await fetchRelevantSectionsFromVectorDb(supabase, question);
+
+      // For conceptual questions like "how to win", do a second search with broader terms
+      if (relevantSections.length < 2) {
+        const broadQuery = question.toLowerCase().includes("win") ? 
+          "victory conditions win game objective" : question;
+        
+        if (broadQuery !== question) {
+          const additionalSections = await fetchRelevantSectionsFromVectorDb(supabase, broadQuery);
+          relevantSections = [...relevantSections, ...additionalSections];
+          // Deduplicate if needed by ID
+          relevantSections = relevantSections.filter((section, index, self) => 
+            index === self.findIndex((s) => s.id === section.id)
+          );
+
+          // After getting relevantSections
+          console.log(`Initial vector search results: ${relevantSections.length}`);
+
+          // After broadening search
+          if (broadQuery !== question) {
+            console.log(`Broadened search with: "${broadQuery}"`);
+            console.log(`Additional results: ${additionalSections.length}`);
+            console.log(`Total unique results: ${relevantSections.length}`);
+          }
+        }
+      }
+
+      // Before checking if we got results
+      console.log(`Final relevant sections: ${relevantSections.length}`);
 
       if (relevantSections && relevantSections.length > 0) {
         // Use vector search results to build prompt

@@ -69,17 +69,35 @@ serve(async (req) => {
       throw new Error(`Failed to generate embedding: ${error.message}`);
     }
 
-    // 3. Call the Supabase RPC function
-    const matchThreshold = 0.70; // Lowered from 0.78 for testing
-    const matchCount = 5;       // Adjust as needed
+    // 3. Call the Supabase RPC function with dynamic threshold
+    let matchThreshold = 0.50; // Initial threshold
+    let matchCount = 8;      // Increased from 5
 
     try {
-       console.log(`Calling RPC function 'match_arcs_rules' with threshold ${matchThreshold}, count ${matchCount}`);
-      const { data: searchData, error: rpcError } = await supabaseAdmin.rpc('match_arcs_rules', {
+      console.log(`Calling RPC function 'match_arcs_rules' with threshold ${matchThreshold}, count ${matchCount}`);
+      let { data: searchData, error: rpcError } = await supabaseAdmin.rpc('match_arcs_rules', {
         query_embedding: queryEmbedding,
         match_threshold: matchThreshold,
         match_count: matchCount,
       });
+
+      // If no results found or very few, try again with lower threshold
+      if (!rpcError && (!Array.isArray(searchData) || searchData.length < 2)) {
+        matchThreshold = 0.45; // Lower threshold for retry
+        console.log(`No/few results found. Retrying with lower threshold ${matchThreshold}`);
+        
+        const retryResult = await supabaseAdmin.rpc('match_arcs_rules', {
+          query_embedding: queryEmbedding,
+          match_threshold: matchThreshold,
+          match_count: matchCount + 2, // Get more results with lower threshold
+        });
+        
+        // Use retry results if successful
+        if (!retryResult.error && Array.isArray(retryResult.data) && retryResult.data.length > 0) {
+          searchData = retryResult.data;
+          console.log(`Retry found ${searchData.length} results`);
+        }
+      }
 
       if (rpcError) {
         console.error('Supabase RPC error:', rpcError);
@@ -92,6 +110,7 @@ serve(async (req) => {
       const results = Array.isArray(searchData) ? searchData as ArcsRuleSearchResult[] : [];
 
       // 4. Return the results
+      console.log(`After dynamic threshold, final results count: ${Array.isArray(searchData) ? searchData.length : 0}`);
       return new Response(JSON.stringify(results), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200,
