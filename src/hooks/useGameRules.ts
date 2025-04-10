@@ -1,82 +1,54 @@
-import { useState } from 'react';
-import LLMService from '@/services/LLMService';
-import RulesService from '@/services/RulesService';
+import { useQuery, useMutation, UseQueryResult, UseMutationResult } from '@tanstack/react-query';
+import { getLLMCompletion } from '@/services/LLMService';
+import { fetchGameRules, fetchRelevantSectionsFromVectorDb } from '@/services/RulesService';
 import { gameResponses } from '@/data/games';
+import { useSupabase } from '@/context/SupabaseContext';
 
-export function useGameRules(gameId: string) {
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  
-  console.log('useGameRules initialized with gameId:', gameId);
-  
-  const askQuestion = async (question: string): Promise<string> => {
-    console.log('askQuestion called with:', question);
-    setLoading(true);
-    setError(null);
+// Define the structure for the data returned by the rules query
+interface GameRulesData {
+  game: string;
+  // We might not need sections loaded by default anymore if using vector search only
+  // sections: any[]; 
+}
+
+// Define the structure for vector search results (matches the service function)
+interface VectorSearchResult {
+  id: string;
+  content: string;
+  metadata: Record<string, any>;
+  similarity: number;
+}
+
+// Define the structure for the variables passed to the mutation
+interface AskQuestionVariables {
+  question: string;
+}
+
+// Define the structure for the returned value of the hook
+interface UseGameRulesReturn {
+  rulesQuery: UseQueryResult<GameRulesData, Error>;
+  askMutation: UseMutationResult<string, Error, AskQuestionVariables, unknown>;
+  getFallbackResponse: (question: string) => string;
+}
+
+const buildPrompt = (gameName: string, question: string, sections: VectorSearchResult[]): string => {
+  // Format the context from vector search results
+  const context = sections
+    .map(section => {
+      // Attempt to create a title from metadata, fallback if needed
+      const title = section.metadata?.heading_path?.join(' > ') || section.metadata?.card || 'Relevant Rule Snippet';
+      return `## ${title}\n${section.content}`;
+    })
+    .join('\n\n');
     
-    try {
-      // First try to load game rules
-      try {
-        const rules = await RulesService.loadRules(gameId);
-        
-        if (rules && rules.sections) {
-          // Find relevant sections
-          const relevantSections = RulesService.findRelevantSections(rules, question);
-          
-          if (relevantSections.length > 0) {
-            // Build prompt with relevant sections
-            const prompt = buildPrompt(rules.game, question, relevantSections);
-            
-            // Get response from LLM
-            const response = await LLMService.getCompletion(prompt);
-            if (response) return response;
-          }
-        }
-      } catch (err) {
-        console.warn('Failed to load rules from JSON, falling back to static responses:', err);
-      }
-      
-      // Fall back to static responses if rules loading fails
-      const gameSpecificResponses = gameResponses[gameId] || gameResponses.default;
-      const normalizedQuery = question.toLowerCase();
-      
-      for (const [keyword, response] of Object.entries(gameSpecificResponses)) {
-        if (keyword !== 'default' && normalizedQuery.includes(keyword)) {
-          return response;
-        }
-      }
-      
-      return gameSpecificResponses.default;
-      
-    } catch (err: any) {
-      const errorMsg = err.message || 'An error occurred';
-      console.error('Error in askQuestion:', errorMsg, err);
-      setError(errorMsg);
-      return "I'm sorry, I couldn't find information about that in the game rules.";
-    } finally {
-      setLoading(false);
-    }
-  };
-  
-  const buildPrompt = (gameName: string, question: string, sections: any[]): string => {
-    return `
+  return `
 You are a helpful assistant for the board game "${gameName}".
 
 The user asked: "${question}"
 
-Here are the relevant rules from the game rulebook:
+Here are the most relevant rules snippets found for that question:
 
-${sections.map(section => {
-  let content = `## ${section.title}\n${section.content}`;
-  
-  if (section.subsections && section.subsections.length > 0) {
-    content += '\n\n' + section.subsections.map((sub: any) => 
-      `### ${sub.title}\n${sub.content}`
-    ).join('\n\n');
-  }
-  
-  return content;
-}).join('\n\n')}
+${context}
 
 **Your Role:** You are an expert rules assistant for the board game Arcs. Your goal is to provide accurate, concise answers based *only* on the provided text snippets.
 
@@ -84,7 +56,7 @@ ${sections.map(section => {
 
 1.  **Answer Directly:** Get straight to the answer using the provided context.
 2.  **Answer Succintly:** Answer the question as succintly as possible. Do not attempt to answer related questions.
-2.  **Prioritize Sources:** If context includes errata or official FAQ snippets, prioritize their information over rulebook snippets if they address the same point. State if errata overrides a rule.
+2.  **Prioritize Sources:** If context includes errata or official FAQ snippets (check metadata if available), prioritize their information over rulebook snippets if they address the same point. State if errata overrides a rule.
 3.  **Synthesize Information:** If multiple snippets are relevant, combine them into a coherent answer.
 4.  **Handle Ambiguity/Conflict:** If the provided snippets are contradictory (and not resolved by errata/FAQ priority) or insufficient to fully answer the question, clearly state that the rules are unclear or the information isn't present in the provided context. Do not guess or infer rules.
 5.  **Formatting:**
@@ -97,11 +69,68 @@ ${sections.map(section => {
 
 Remember that the user is in the middle of a game and needs clear, direct answers.
 `;
+};
+
+export function useGameRules(gameId: string): UseGameRulesReturn {
+  // Get Supabase client via hook - this is safe here
+  const { supabase } = useSupabase(); 
+
+  // Query to fetch basic game info (e.g., game name). 
+  // We might not need the full rules sections if only using vector search.
+  // Consider creating a lighter fetch function if fetchGameRules loads too much.
+  const rulesQuery = useQuery<GameRulesData, Error>({
+    queryKey: ['gameBaseInfo', gameId], // Adjusted key if only loading base info
+    queryFn: async () => { 
+        // If fetchGameRules loads everything, extract just the game name?
+        // Or create a new service function fetchGameBaseInfo(gameId)
+        const rules = await fetchGameRules(gameId); 
+        return { game: rules?.game || 'Unknown Game' }; // Return only needed info
+    },
+    enabled: !!gameId, 
+    staleTime: Infinity, 
+    gcTime: Infinity,    
+  });
+
+  // Mutation to ask question using vector search for context
+  const askMutation = useMutation<string, Error, AskQuestionVariables>({
+    mutationFn: async ({ question }: AskQuestionVariables) => {
+      // Ensure game name is available (needed for prompt)
+      const gameName = rulesQuery.data?.game;
+      if (!gameName) {
+         throw new Error('Game information not loaded yet.'); 
+      }
+
+      // Pass the supabase client instance to the service function
+      const relevantSections = await fetchRelevantSectionsFromVectorDb(supabase, question);
+
+      if (relevantSections && relevantSections.length > 0) {
+        // Use vector search results to build prompt
+        const prompt = buildPrompt(gameName, question, relevantSections);
+        const response = await getLLMCompletion({ prompt }); 
+        return response;
+      } else {
+        // Fallback if vector search returns no results
+        return getFallbackResponse(question); 
+      }
+    },
+  });
+
+  // Function to get the static fallback response
+  const getFallbackResponse = (question: string): string => {
+    const gameSpecificResponses = gameResponses[gameId] || gameResponses.default;
+    const normalizedQuery = question.toLowerCase();
+    
+    for (const [keyword, response] of Object.entries(gameSpecificResponses)) {
+      if (keyword !== 'default' && normalizedQuery.includes(keyword)) {
+        return response;
+      }
+    }
+    return gameSpecificResponses.default || "I couldn't find specific information for that question.";
   };
-  
+
   return {
-    askQuestion,
-    loading,
-    error
+    rulesQuery,     
+    askMutation,    
+    getFallbackResponse 
   };
 } 

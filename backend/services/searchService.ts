@@ -56,12 +56,12 @@ export async function vectorSearchArcsRules(
     matchThreshold: number = 0.75, // Default threshold
     matchCount: number = 5        // Default number of results
 ): Promise<ArcsRuleSearchResult[]> {
-    console.log(`Performing vector search for query: "${query}"`);
+    // console.log(`Performing vector search for query: "${query}"`);
 
     // 1. Generate embedding for the query using OpenAI
     let queryEmbedding: number[];
     try {
-        console.log(`Generating embedding using OpenAI ${OPENAI_MODEL}...`);
+        // console.log(`Generating embedding using OpenAI ${OPENAI_MODEL}...`);
         
         const response = await openai.embeddings.create({
             model: OPENAI_MODEL,
@@ -73,14 +73,14 @@ export async function vectorSearchArcsRules(
         
         // Verify the embedding dimensions
         if (queryEmbedding.length !== 1536) {
-            console.error(`Embedding dimension mismatch. Expected 1536, got ${queryEmbedding.length}`);
+            // console.error(`Embedding dimension mismatch. Expected 1536, got ${queryEmbedding.length}`);
             throw new Error(`Embedding dimension mismatch. Expected 1536, got ${queryEmbedding.length}`);
         }
         
-        console.log("Successfully generated query embedding.");
+        // console.log("Successfully generated query embedding.");
 
     } catch (error: any) {
-        console.error('Failed to generate query embedding:', error);
+        // console.error('Failed to generate query embedding:', error);
         throw new Error(`Failed to generate embedding for query: ${error.message}`);
     }
 
@@ -96,13 +96,13 @@ export async function vectorSearchArcsRules(
         );
 
         if (rpcError) {
-            console.error('Supabase RPC error:', rpcError);
+            // console.error('Supabase RPC error:', rpcError);
             throw new Error(`Database search error: ${rpcError.message}`);
         }
 
         // Check if searchData is an array before accessing length
         const resultCount = Array.isArray(searchData) ? searchData.length : 0;
-        console.log(`Found ${resultCount} potential matches.`);
+        // console.log(`Found ${resultCount} potential matches.`);
 
         if (!Array.isArray(searchData) || searchData.length === 0) {
             return [];
@@ -111,14 +111,14 @@ export async function vectorSearchArcsRules(
         // Validate the structure of the first item if data exists (optional sanity check)
         const firstItem = searchData[0];
         if (typeof firstItem.id !== 'string' || typeof firstItem.content !== 'string' || typeof firstItem.similarity !== 'number' || typeof firstItem.metadata !== 'object') {
-             console.warn('RPC returned data with unexpected structure.', firstItem);
+             // console.warn('RPC returned data with unexpected structure.', firstItem);
              // Depending on strictness, you might throw an error or filter invalid items
         }
 
         return searchData as ArcsRuleSearchResult[]; // Cast should be safe after checks
 
     } catch (error: any) {
-        console.error('Failed to perform vector search:', error);
+        // console.error('Failed to perform vector search:', error);
         throw new Error(`Failed to execute search: ${error.message}`);
     }
 }
@@ -128,21 +128,21 @@ export async function vectorSearchArcsRules(
 async function runSearchExample() {
     const exampleQuery = "How does battle work?";
     try {
-        console.log(`\n--- Running search example for: "${exampleQuery}" ---`);
+        // console.log(`\n--- Running search example for: "${exampleQuery}" ---`);
         const results = await vectorSearchArcsRules(exampleQuery, 0.7, 3); // Find top 3 matches with similarity > 0.7
-        console.log('\n--- Search Results ---');
+        // console.log('\n--- Search Results ---');
         if (results.length > 0) {
             results.forEach((result, index) => {
-                console.log(`\n--- Result ${index + 1} (Similarity: ${result.similarity.toFixed(4)}) ---`);
-                console.log('Metadata:', result.metadata);
-                console.log('Content Preview:', result.content.substring(0, 200) + '...');
+                // console.log(`\n--- Result ${index + 1} (Similarity: ${result.similarity.toFixed(4)}) ---`);
+                // console.log('Metadata:', result.metadata);
+                // console.log('Content Preview:', result.content.substring(0, 200) + '...');
             });
         } else {
-            console.log('No results found matching the criteria.');
+            // console.log('No results found matching the criteria.');
         }
     } catch (error) {
-        console.error('\n--- Search Example Failed ---');
-        console.error(error);
+        // console.error('\n--- Search Example Failed ---');
+        // console.error(error);
     }
 }
 

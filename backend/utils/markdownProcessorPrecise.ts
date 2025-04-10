@@ -236,6 +236,5 @@ export function processMarkdownAndChunk(markdownContent: string): Chunk[] {
     const MIN_CHUNK_CHAR_LENGTH = 15;
     const refinedChunks = chunks.filter(chunk => chunk.content.length >= MIN_CHUNK_CHAR_LENGTH);
     
-    console.log(`Processed markdown. Initial chunks: ${chunks.length}, Refined chunks (>=${MIN_CHUNK_CHAR_LENGTH} chars): ${refinedChunks.length}.`);
     return refinedChunks;
 }

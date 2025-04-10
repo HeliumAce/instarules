@@ -174,7 +174,7 @@ export function processMarkdownAndChunk(markdownContent: string): Chunk[] {
     const MIN_CHUNK_CHAR_LENGTH = 30; // Characters, not words
     const refinedChunks = chunks.filter(chunk => chunk.content.length >= MIN_CHUNK_CHAR_LENGTH);
 
-    console.log(`Processed markdown. Initial chunks: ${chunks.length}, Refined chunks (>=${MIN_CHUNK_CHAR_LENGTH} chars): ${refinedChunks.length}.`);
+    // console.log(`Processed markdown. Initial chunks: ${chunks.length}, Refined chunks (>=${MIN_CHUNK_CHAR_LENGTH} chars): ${refinedChunks.length}.`);
     return refinedChunks;
 }
 
@@ -187,28 +187,28 @@ async function runExample() {
     try {
         // Adjust the path relative to where you run the script
         const markdownFilePath = path.resolve(__dirname, '../../src/data/games/arcs/arcs_unified.md');
-        console.log(`Attempting to read: ${markdownFilePath}`);
+        // console.log(`Attempting to read: ${markdownFilePath}`);
         const markdown = await fs.readFile(markdownFilePath, 'utf-8');
         const chunks = processMarkdownAndChunk(markdown);
 
-        console.log('\\n--- First 3 Chunks ---');
+        // console.log('\\n--- First 3 Chunks ---');
         chunks.slice(0, 3).forEach((chunk, i) => {
-            console.log(`\\n--- Chunk ${i + 1} ---`);
-            console.log('Metadata:', chunk.metadata);
-            console.log('Content Preview:', chunk.content.substring(0, 150) + '...');
+            // console.log(`\\n--- Chunk ${i + 1} ---`);
+            // console.log('Metadata:', chunk.metadata);
+            // console.log('Content Preview:', chunk.content.substring(0, 150) + '...');
         });
 
-        console.log('\\n--- Example Card Chunk ---');
+        // console.log('\\n--- Example Card Chunk ---');
         const cardChunk = chunks.find(c => c.metadata.content_type === 'card');
         if(cardChunk) {
-            console.log('Metadata:', cardChunk.metadata);
-            console.log('Content:', cardChunk.content);
+            // console.log('Metadata:', cardChunk.metadata);
+            // console.log('Content:', cardChunk.content);
         } else {
-            console.log('No card chunk found in example output.');
+            // console.log('No card chunk found in example output.');
         }
 
     } catch (error) {
-        console.error('Error running example:', error);
+        // console.error('Error running example:', error);
     }
 }
 

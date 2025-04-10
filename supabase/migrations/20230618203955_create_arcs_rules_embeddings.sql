@@ -1,3 +1,6 @@
+-- Enable the pgvector extension
+CREATE EXTENSION IF NOT EXISTS vector;
+
 -- Create a table for storing ARCS game rules with embeddings
 CREATE TABLE arcs_rules_embeddings (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

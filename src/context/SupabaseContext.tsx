@@ -2,6 +2,12 @@ import { createContext, useContext, useEffect, useState } from 'react';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { useNavigate } from 'react-router-dom';
 
+// Create the Supabase client instance *outside* the component
+const supabase = createClient(
+  import.meta.env.VITE_SUPABASE_URL,
+  import.meta.env.VITE_SUPABASE_ANON_KEY
+);
+
 interface SupabaseContextType {
   supabase: SupabaseClient;
 }
@@ -9,11 +15,7 @@ interface SupabaseContextType {
 const SupabaseContext = createContext<SupabaseContextType | undefined>(undefined);
 
 export function SupabaseProvider({ children }: { children: React.ReactNode }) {
-  const supabase = createClient(
-    import.meta.env.VITE_SUPABASE_URL,
-    import.meta.env.VITE_SUPABASE_ANON_KEY
-  );
-
+  // Use the single instance created above
   return (
     <SupabaseContext.Provider value={{ supabase }}>
       {children}
