@@ -53,8 +53,8 @@ const OPENAI_MODEL = 'text-embedding-3-small';
  */
 export async function vectorSearchArcsRules(
     query: string,
-    matchThreshold: number = 0.75, // Default threshold
-    matchCount: number = 5        // Default number of results
+    matchThreshold: number = 0.50, // Default threshold
+    matchCount: number = 8        // Default number of results
 ): Promise<ArcsRuleSearchResult[]> {
     // console.log(`Performing vector search for query: "${query}"`);
 

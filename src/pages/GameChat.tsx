@@ -31,7 +31,7 @@ const GameChat = () => {
       if (!welcomeShownRef.current && !messagesLoading && messages.length === 0 && game && user) {
         welcomeShownRef.current = true;
         await saveMessage(
-          `Hi! I'm your rules assistant for ${game.title}. Ask me any questions about the rules, setup, or gameplay.`,
+          `Ask me any questions about ${game.title} rules, setup, or gameplay.`,
           false
         );
       }

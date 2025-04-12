@@ -36,36 +36,73 @@ const buildPrompt = (gameName: string, question: string, sections: VectorSearchR
   const context = sections
     .map(section => {
       // Attempt to create a title from metadata, fallback if needed
-      const title = section.metadata?.heading_path?.join(' > ') || section.metadata?.card || 'Relevant Rule Snippet';
+      const title = section.metadata?.heading_path?.join(' > ') || section.metadata?.card || 'Relevant Section';
       return `## ${title}\n${section.content}`;
     })
     .join('\n\n');
+  
+  // Calculate average similarity to help the LLM understand context quality
+  const avgSimilarity = sections.reduce((sum, section) => sum + section.similarity, 0) / sections.length;
+  const contextQualityNote = avgSimilarity < 0.6 
+    ? "\n\nNOTE: The provided information may have low relevance to the question. Be cautious in your response."
+    : "";
     
   return `
 You are a helpful assistant for the board game "${gameName}".
 
 The user asked: "${question}"
 
-Here are the most relevant rules snippets found for that question:
+Here is the relevant information:${contextQualityNote}
 
 ${context}
 
-**Your Role:** You are an expert rules assistant for the board game Arcs. Your goal is to provide accurate, concise answers based *only* on the provided text snippets.
+**Your Role:** You are an expert assistant for the board game Arcs. Your goal is to provide accurate, concise answers.
 
 **Instructions:**
 
-1.  **Answer Directly:** Get straight to the answer using the provided context.
-2.  **Answer Succintly:** Answer the question as succintly as possible. Do not attempt to answer related questions.
-2.  **Prioritize Sources:** If context includes errata or official FAQ snippets (check metadata if available), prioritize their information over rulebook snippets if they address the same point. State if errata overrides a rule.
-3.  **Synthesize Information:** If multiple snippets are relevant, combine them into a coherent answer.
-4.  **Handle Ambiguity/Conflict:** If the provided snippets are contradictory (and not resolved by errata/FAQ priority) or insufficient to fully answer the question, clearly state that the rules are unclear or the information isn't present in the provided context. Do not guess or infer rules.
-5.  **Formatting:**
+1. **First, Evaluate Relevance:** Begin by silently assessing how relevant each piece of information is to the question. Don't write this out - it's to help you form a better answer.
+
+2. **Answer Directly:** Get straight to the answer without mentioning sources or where information comes from.
+
+3. **Answer Succinctly:** Answer the question as succinctly as possible. Do not attempt to answer related questions.
+
+4. **Prioritize Official Information:** If information from errata or FAQs is included, prioritize that over other information.
+
+5. **Synthesize Information:** If multiple pieces of information are relevant, combine them into a coherent answer.
+
+**Handling Uncertain or Missing Information:**
+
+6. **For Partial Information:** If you only have part of what's needed, clearly state what you know and what you don't:
+   "[Direct answer for what is known]. This doesn't specifically address [what's missing]."
+
+7. **For Tangential Information:** If your information is related but doesn't directly answer:
+   "This doesn't explicitly address [specific question]. However, related concepts indicate that [tangential information]."
+
+8. **For No Relevant Information:** If nothing relevant is available, be straightforward:
+   "This question isn't covered in the available information. You might want to check about [suggest related area]."
+
+9. **Confidence Indicator:** End your response with:
+   "Confidence: [Level]" where Level is:
+   - High: Clear, explicit information directly answers the question
+   - Medium: Information addresses the question but requires interpretation
+   - Low: Limited information or significant inference required
+
+10. **Formatting:**
     * Use bullet points for lists or step-by-step processes.
-    * **Bold** key game terms, card names, or action names mentioned in the rules.
-6.  **Exclusions:**
-    * Do NOT include preamble phrases like "Based on the rules..." or "The context states...". or any other preamble.
-    * Do NOT refer to rulebook page numbers or document names unless quoting a specific named source like an FAQ.
+    * **Bold** key game terms, card names, or action names.
+
+11. **Exclusions:**
+    * Do NOT include phrases like "Based on the information..." or refer to any sources.
+    * Do NOT refer to page numbers or document names.
     * Avoid unnecessary explanations or flavor text.
+    * Never apologize for lack of information.
+
+**Example of Good "I Don't Know Enough" Response:**
+
+Question: "What types of resources are in the game?"
+Answer: "The game includes resources that players can collect and use, but the specific resource types aren't detailed in the available information.
+
+Confidence: Low"
 
 Remember that the user is in the middle of a game and needs clear, direct answers.
 `;
@@ -97,11 +134,39 @@ export function useGameRules(gameId: string): UseGameRulesReturn {
       // Ensure game name is available (needed for prompt)
       const gameName = rulesQuery.data?.game;
       if (!gameName) {
-         throw new Error('Game information not loaded yet.'); 
+        throw new Error('Game information not loaded yet.'); 
       }
 
       // Pass the supabase client instance to the service function
-      const relevantSections = await fetchRelevantSectionsFromVectorDb(supabase, question);
+      let relevantSections = await fetchRelevantSectionsFromVectorDb(supabase, question);
+
+      // For conceptual questions like "how to win", do a second search with broader terms
+      if (relevantSections.length < 2) {
+        const broadQuery = question.toLowerCase().includes("win") ? 
+          "victory conditions win game objective" : question;
+        
+        if (broadQuery !== question) {
+          const additionalSections = await fetchRelevantSectionsFromVectorDb(supabase, broadQuery);
+          relevantSections = [...relevantSections, ...additionalSections];
+          // Deduplicate if needed by ID
+          relevantSections = relevantSections.filter((section, index, self) => 
+            index === self.findIndex((s) => s.id === section.id)
+          );
+
+          // After getting relevantSections
+          console.log(`Initial vector search results: ${relevantSections.length}`);
+
+          // After broadening search
+          if (broadQuery !== question) {
+            console.log(`Broadened search with: "${broadQuery}"`);
+            console.log(`Additional results: ${additionalSections.length}`);
+            console.log(`Total unique results: ${relevantSections.length}`);
+          }
+        }
+      }
+
+      // Before checking if we got results
+      console.log(`Final relevant sections: ${relevantSections.length}`);
 
       if (relevantSections && relevantSections.length > 0) {
         // Use vector search results to build prompt
@@ -125,7 +190,9 @@ export function useGameRules(gameId: string): UseGameRulesReturn {
         return response;
       }
     }
-    return gameSpecificResponses.default || "I couldn't find specific information for that question.";
+    
+    // Override default response with our custom message
+    return "I'm not able to answer your question.";
   };
 
   return {
