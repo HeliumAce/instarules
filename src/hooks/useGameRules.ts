@@ -1,12 +1,14 @@
 import { useQuery, useMutation, UseQueryResult, UseMutationResult } from '@tanstack/react-query';
 import { getLLMCompletion } from '@/services/LLMService';
-import { fetchGameRules, fetchRelevantSectionsFromVectorDb } from '@/services/RulesService';
+import { fetchGameRules, fetchRelevantSectionsFromVectorDb, findRelevantSections } from '@/services/RulesService';
+import { preprocessQuery } from '@/services/QueryPreprocessorService';
 import { gameResponses } from '@/data/games';
 import { useSupabase } from '@/context/SupabaseContext';
 
 // Define the structure for the data returned by the rules query
 interface GameRulesData {
   game: string;
+  rules: any;
   // We might not need sections loaded by default anymore if using vector search only
   // sections: any[]; 
 }
@@ -58,9 +60,11 @@ ${context}
 
 **Your Role:** You are an expert assistant for the board game Arcs. Your goal is to provide accurate, concise answers.
 
+**CRITICAL: NEVER INVENT OR HALLUCINATE INFORMATION. If the provided content doesn't explicitly mention something (like specific resource types, actions, etc.), DO NOT make it up. Instead, clearly state that this information isn't provided in the available content.**
+
 **Instructions:**
 
-1. **First, Evaluate Relevance:** Begin by silently assessing how relevant each piece of information is to the question. Don't write this out - it's to help you form a better answer.
+1. **First, Evaluate Information Completeness:** Before answering, determine if the provided information contains a clear, explicit answer to the question. If it doesn't, you must say so rather than guessing.
 
 2. **Answer Directly:** Get straight to the answer without mentioning sources or where information comes from.
 
@@ -68,7 +72,7 @@ ${context}
 
 4. **Prioritize Official Information:** If information from errata or FAQs is included, prioritize that over other information.
 
-5. **Synthesize Information:** If multiple pieces of information are relevant, combine them into a coherent answer.
+5. **Specificity Check:** For questions asking about specific game elements (like "what are the 5 resource types?"), ONLY provide the answer if it's explicitly stated in the information provided. Do not try to deduce or guess these details.
 
 **Handling Uncertain or Missing Information:**
 
@@ -79,13 +83,13 @@ ${context}
    "This doesn't explicitly address [specific question]. However, related concepts indicate that [tangential information]."
 
 8. **For No Relevant Information:** If nothing relevant is available, be straightforward:
-   "This question isn't covered in the available information. You might want to check about [suggest related area]."
+   "The available information doesn't specifically address [question]. I cannot provide details about [specific topic] without risking inaccuracy."
 
 9. **Confidence Indicator:** End your response with:
    "Confidence: [Level]" where Level is:
-   - High: Clear, explicit information directly answers the question
-   - Medium: Information addresses the question but requires interpretation
-   - Low: Limited information or significant inference required
+   - High: ONLY use when the information explicitly and completely answers the question
+   - Medium: Information addresses the question but requires some interpretation
+   - Low: Limited information or significant parts of the answer aren't covered
 
 10. **Formatting:**
     * Use bullet points for lists or step-by-step processes.
@@ -94,17 +98,20 @@ ${context}
 11. **Exclusions:**
     * Do NOT include phrases like "Based on the information..." or refer to any sources.
     * Do NOT refer to page numbers or document names.
-    * Avoid unnecessary explanations or flavor text.
     * Never apologize for lack of information.
 
-**Example of Good "I Don't Know Enough" Response:**
+**Example of Correct "I Don't Know" Response:**
 
-Question: "What types of resources are in the game?"
-Answer: "The game includes resources that players can collect and use, but the specific resource types aren't detailed in the available information.
+Question: "What are the 5 resource types in the game?"
+Good Answer: "The available information doesn't specifically list all 5 resource types. I cannot provide a complete list without risking inaccuracy.
 
 Confidence: Low"
 
-Remember that the user is in the middle of a game and needs clear, direct answers.
+Bad Answer (NEVER DO THIS): "The 5 resource types are Gold, Wood, Stone, Iron, and Crystal.
+
+Confidence: High"
+
+Remember that the user is in the middle of a game and needs clear, direct answers, but accuracy is more important than completeness.
 `;
 };
 
@@ -121,14 +128,14 @@ export function useGameRules(gameId: string): UseGameRulesReturn {
         // If fetchGameRules loads everything, extract just the game name?
         // Or create a new service function fetchGameBaseInfo(gameId)
         const rules = await fetchGameRules(gameId); 
-        return { game: rules?.game || 'Unknown Game' }; // Return only needed info
+        return { game: rules?.game || 'Unknown Game', rules }; // Return full rules for text search
     },
     enabled: !!gameId, 
     staleTime: Infinity, 
     gcTime: Infinity,    
   });
 
-  // Mutation to ask question using vector search for context
+  // Mutation to ask question using hybrid search for context
   const askMutation = useMutation<string, Error, AskQuestionVariables>({
     mutationFn: async ({ question }: AskQuestionVariables) => {
       // Ensure game name is available (needed for prompt)
@@ -137,44 +144,122 @@ export function useGameRules(gameId: string): UseGameRulesReturn {
         throw new Error('Game information not loaded yet.'); 
       }
 
-      // Pass the supabase client instance to the service function
-      let relevantSections = await fetchRelevantSectionsFromVectorDb(supabase, question);
-
+      // Preprocess the query to get improved search terms
+      const expandedQueries = preprocessQuery(question);
+      console.log(`[Hybrid Search] Using ${expandedQueries.length} query variations`);
+      
+      // Step 1: Perform vector search with all query variations
+      console.log(`[Hybrid Search] Starting vector searches`);
+      let allVectorResults: VectorSearchResult[] = [];
+      
+      // Sequential search using all expanded queries
+      for (const expandedQuery of expandedQueries) {
+        console.log(`[Hybrid Search] Vector search for: "${expandedQuery}"`);
+        const results = await fetchRelevantSectionsFromVectorDb(supabase, expandedQuery);
+        console.log(`[Hybrid Search] Found ${results.length} results for variation`);
+        
+        // Add results to combined set
+        allVectorResults = [...allVectorResults, ...results];
+      }
+      
+      // Deduplicate vector results
+      const vectorResults = allVectorResults.filter((result, index, self) => 
+        index === self.findIndex((r) => r.id === result.id)
+      );
+      
+      console.log(`[Hybrid Search] Total unique vector results: ${vectorResults.length}`);
+      
       // For conceptual questions like "how to win", do a second search with broader terms
-      if (relevantSections.length < 2) {
+      if (vectorResults.length < 2) {
         const broadQuery = question.toLowerCase().includes("win") ? 
           "victory conditions win game objective" : question;
         
         if (broadQuery !== question) {
+          console.log(`[Hybrid Search] Broadening vector search with: "${broadQuery}"`);
           const additionalSections = await fetchRelevantSectionsFromVectorDb(supabase, broadQuery);
-          relevantSections = [...relevantSections, ...additionalSections];
-          // Deduplicate if needed by ID
-          relevantSections = relevantSections.filter((section, index, self) => 
-            index === self.findIndex((s) => s.id === section.id)
-          );
-
-          // After getting relevantSections
-          console.log(`Initial vector search results: ${relevantSections.length}`);
-
-          // After broadening search
-          if (broadQuery !== question) {
-            console.log(`Broadened search with: "${broadQuery}"`);
-            console.log(`Additional results: ${additionalSections.length}`);
-            console.log(`Total unique results: ${relevantSections.length}`);
-          }
+          console.log(`[Hybrid Search] Broadened search returned ${additionalSections.length} results`);
+          
+          // Add additional results
+          const combinedVectorResults = [...vectorResults, ...additionalSections];
+          
+          // Deduplicate again
+          vectorResults.splice(0, vectorResults.length, ...combinedVectorResults.filter((result, index, self) => 
+            index === self.findIndex((r) => r.id === result.id)
+          ));
+          
+          console.log(`[Hybrid Search] Total unique vector results after broadening: ${vectorResults.length}`);
         }
       }
+      
+      // Step 2: Perform text search using existing functionality
+      console.log(`[Hybrid Search] Performing text search for original and expanded queries`);
+      // Get the rules data (using either from rulesQuery or fetch it if needed)
+      const rulesData = rulesQuery.data?.rules || await fetchGameRules(gameId);
+      
+      // Try text search with both original and expanded queries
+      let allTextResults: any[] = [];
+      for (const expandedQuery of expandedQueries) {
+        const results = findRelevantSections(rulesData, expandedQuery);
+        allTextResults = [...allTextResults, ...results];
+      }
+      
+      // Deduplicate text results by title
+      const textResults = allTextResults.filter((result, index, self) => 
+        index === self.findIndex((r) => r.title === result.title)
+      );
+      
+      console.log(`[Hybrid Search] Text search returned ${textResults.length} unique results`);
+      
+      // Step 3: Convert text results to match vector result format
+      const formattedTextResults: VectorSearchResult[] = textResults.map((item, index) => ({
+        id: `text-${index}`,
+        content: typeof item.content === 'string' ? item.content : JSON.stringify(item.content),
+        metadata: {
+          source_heading: item.title,
+          headings: [item.title],
+          content_type: item.sourceType?.toLowerCase() || 'other',
+          source: 'text_search'
+        },
+        similarity: 0.7 - (index * 0.05) // Assign decreasing similarity scores
+      }));
+      
+      // Step 4: Combine and deduplicate results
+      const allResults = [...vectorResults];
+      
+      // Add text results, avoiding duplicates
+      for (const textResult of formattedTextResults) {
+        // Simple deduplication check based on content
+        const isDuplicate = vectorResults.some(vr => {
+          const vrPreview = vr.content.substring(0, 100).toLowerCase();
+          const trPreview = textResult.content.substring(0, 100).toLowerCase();
+          return vrPreview.includes(trPreview) || trPreview.includes(vrPreview);
+        });
+        
+        if (!isDuplicate) {
+          allResults.push(textResult);
+        }
+      }
+      
+      // Sort by similarity and take top results
+      const finalResults = allResults
+        .sort((a, b) => b.similarity - a.similarity)
+        .slice(0, 8);
+      
+      // Log combined results for debugging
+      console.log(`[Hybrid Search] Final combined results: ${finalResults.length}`);
+      finalResults.forEach((result, i) => {
+        const source = result.id.toString().startsWith('text') ? 'text search' : 'vector search';
+        console.log(`Result #${i+1}: similarity=${result.similarity.toFixed(2)}, source=${source}`);
+        console.log(`Content preview: ${result.content.substring(0, 100).replace(/\n/g, ' ')}...`);
+      });
 
-      // Before checking if we got results
-      console.log(`Final relevant sections: ${relevantSections.length}`);
-
-      if (relevantSections && relevantSections.length > 0) {
-        // Use vector search results to build prompt
-        const prompt = buildPrompt(gameName, question, relevantSections);
+      if (finalResults.length > 0) {
+        // Use combined results to build prompt
+        const prompt = buildPrompt(gameName, question, finalResults);
         const response = await getLLMCompletion({ prompt }); 
         return response;
       } else {
-        // Fallback if vector search returns no results
+        // Fallback if no results found
         return getFallbackResponse(question); 
       }
     },

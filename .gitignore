@@ -25,3 +25,7 @@ dist-ssr
 
 # Environment variables
 .env
+
+# Project files
+PROJECT-OVERVIEW.md
+PROJECT-PLAN.md
