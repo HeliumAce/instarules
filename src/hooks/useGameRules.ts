@@ -1,6 +1,7 @@
 import { useQuery, useMutation, UseQueryResult, UseMutationResult } from '@tanstack/react-query';
 import { getLLMCompletion } from '@/services/LLMService';
 import { fetchGameRules, fetchRelevantSectionsFromVectorDb, findRelevantSections } from '@/services/RulesService';
+import { preprocessQuery } from '@/services/QueryPreprocessorService';
 import { gameResponses } from '@/data/games';
 import { useSupabase } from '@/context/SupabaseContext';
 
@@ -143,10 +144,30 @@ export function useGameRules(gameId: string): UseGameRulesReturn {
         throw new Error('Game information not loaded yet.'); 
       }
 
-      // Step 1: Perform vector search
-      console.log(`[Hybrid Search] Vector search for: "${question}"`);
-      let vectorResults = await fetchRelevantSectionsFromVectorDb(supabase, question);
-      console.log(`[Hybrid Search] Vector search returned ${vectorResults.length} results`);
+      // Preprocess the query to get improved search terms
+      const expandedQueries = preprocessQuery(question);
+      console.log(`[Hybrid Search] Using ${expandedQueries.length} query variations`);
+      
+      // Step 1: Perform vector search with all query variations
+      console.log(`[Hybrid Search] Starting vector searches`);
+      let allVectorResults: VectorSearchResult[] = [];
+      
+      // Sequential search using all expanded queries
+      for (const expandedQuery of expandedQueries) {
+        console.log(`[Hybrid Search] Vector search for: "${expandedQuery}"`);
+        const results = await fetchRelevantSectionsFromVectorDb(supabase, expandedQuery);
+        console.log(`[Hybrid Search] Found ${results.length} results for variation`);
+        
+        // Add results to combined set
+        allVectorResults = [...allVectorResults, ...results];
+      }
+      
+      // Deduplicate vector results
+      const vectorResults = allVectorResults.filter((result, index, self) => 
+        index === self.findIndex((r) => r.id === result.id)
+      );
+      
+      console.log(`[Hybrid Search] Total unique vector results: ${vectorResults.length}`);
       
       // For conceptual questions like "how to win", do a second search with broader terms
       if (vectorResults.length < 2) {
@@ -158,21 +179,36 @@ export function useGameRules(gameId: string): UseGameRulesReturn {
           const additionalSections = await fetchRelevantSectionsFromVectorDb(supabase, broadQuery);
           console.log(`[Hybrid Search] Broadened search returned ${additionalSections.length} results`);
           
-          vectorResults = [...vectorResults, ...additionalSections];
-          // Deduplicate if needed by ID
-          vectorResults = vectorResults.filter((section, index, self) => 
-            index === self.findIndex((s) => s.id === section.id)
-          );
-          console.log(`[Hybrid Search] Total unique vector results: ${vectorResults.length}`);
+          // Add additional results
+          const combinedVectorResults = [...vectorResults, ...additionalSections];
+          
+          // Deduplicate again
+          vectorResults.splice(0, vectorResults.length, ...combinedVectorResults.filter((result, index, self) => 
+            index === self.findIndex((r) => r.id === result.id)
+          ));
+          
+          console.log(`[Hybrid Search] Total unique vector results after broadening: ${vectorResults.length}`);
         }
       }
       
       // Step 2: Perform text search using existing functionality
-      console.log(`[Hybrid Search] Performing text search for: "${question}"`);
+      console.log(`[Hybrid Search] Performing text search for original and expanded queries`);
       // Get the rules data (using either from rulesQuery or fetch it if needed)
       const rulesData = rulesQuery.data?.rules || await fetchGameRules(gameId);
-      const textResults = findRelevantSections(rulesData, question);
-      console.log(`[Hybrid Search] Text search returned ${textResults.length} results`);
+      
+      // Try text search with both original and expanded queries
+      let allTextResults: any[] = [];
+      for (const expandedQuery of expandedQueries) {
+        const results = findRelevantSections(rulesData, expandedQuery);
+        allTextResults = [...allTextResults, ...results];
+      }
+      
+      // Deduplicate text results by title
+      const textResults = allTextResults.filter((result, index, self) => 
+        index === self.findIndex((r) => r.title === result.title)
+      );
+      
+      console.log(`[Hybrid Search] Text search returned ${textResults.length} unique results`);
       
       // Step 3: Convert text results to match vector result format
       const formattedTextResults: VectorSearchResult[] = textResults.map((item, index) => ({
