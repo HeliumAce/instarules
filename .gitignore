@@ -27,5 +27,5 @@ dist-ssr
 .env
 
 # Project files
-PROJECT-OVERVIEW.md
-PROJECT-PLAN.md
+project-model.md
+project-tech.md
