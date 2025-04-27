@@ -1,7 +1,7 @@
 import { useQuery, useMutation, UseQueryResult, UseMutationResult } from '@tanstack/react-query';
 import { getLLMCompletion } from '@/services/LLMService';
 import { fetchGameRules, fetchRelevantSectionsFromVectorDb, findRelevantSections } from '@/services/RulesService';
-import { preprocessQuery } from '@/services/QueryPreprocessorService';
+import { preprocessQuery, classifyQuery } from '@/services/QueryPreprocessorService';
 import { gameResponses } from '@/data/games';
 import { useSupabase } from '@/context/SupabaseContext';
 
@@ -24,6 +24,7 @@ interface VectorSearchResult {
 // Define the structure for the variables passed to the mutation
 interface AskQuestionVariables {
   question: string;
+  chatHistory?: { content: string; isUser: boolean }[];
 }
 
 // Define the structure for the returned value of the hook
@@ -33,7 +34,38 @@ interface UseGameRulesReturn {
   getFallbackResponse: (question: string) => string;
 }
 
-const buildPrompt = (gameName: string, question: string, sections: VectorSearchResult[]): string => {
+// Define the isSimilarContent function early in the file, outside the hooks
+
+// Helper function to check if two content blocks are similar
+function isSimilarContent(content1: string, content2: string, threshold: number): boolean {
+  // Simple text similarity check
+  const preview1 = content1.substring(0, 200).toLowerCase();
+  const preview2 = content2.substring(0, 200).toLowerCase();
+  
+  // If one completely contains the other, they're similar
+  if (preview1.includes(preview2) || preview2.includes(preview1)) {
+    return true;
+  }
+  
+  // Count matching words as a similarity measure
+  const words1 = new Set(preview1.split(/\s+/).filter(w => w.length > 3));
+  const words2 = new Set(preview2.split(/\s+/).filter(w => w.length > 3));
+  
+  // Find intersection
+  const commonWords = [...words1].filter(word => words2.has(word));
+  
+  // Calculate Jaccard similarity
+  const similarity = commonWords.length / (words1.size + words2.size - commonWords.length);
+  
+  return similarity >= threshold;
+}
+
+const buildPrompt = (
+  gameName: string, 
+  question: string, 
+  sections: VectorSearchResult[],
+  chatHistory?: { content: string; isUser: boolean }[]
+): string => {
   // Format the context from vector search results
   const context = sections
     .map(section => {
@@ -48,19 +80,105 @@ const buildPrompt = (gameName: string, question: string, sections: VectorSearchR
   const contextQualityNote = avgSimilarity < 0.6 
     ? "\n\nNOTE: The provided information may have low relevance to the question. Be cautious in your response."
     : "";
+  
+  // Format chat history if provided
+  let chatHistoryText = '';
+  if (chatHistory && chatHistory.length > 0) {
+    // Take the most recent 4 messages for context
+    const recentMessages = chatHistory.slice(-4);
+    chatHistoryText = `\n\n## Previous Conversation\n${recentMessages.map(msg => 
+      `${msg.isUser ? 'User' : 'Assistant'}: ${msg.content}`
+    ).join('\n')}`;
+  }
     
+  // Detect question complexity to customize instructions
+  const queryTypes = classifyQuery(question);
+  const isEnumeration = queryTypes.includes('ENUMERATION_QUESTION');
+  const isComparison = queryTypes.includes('COMPARISON_QUESTION');
+  const isInteraction = queryTypes.includes('INTERACTION_QUESTION');
+  const isReasoning = queryTypes.includes('REASONING_QUESTION');
+  
+  // Customize instructions based on question type
+  let specializedInstructions = '';
+  
+  if (isEnumeration) {
+    // Check if it's specifically a card/type enumeration question
+    if (question.toLowerCase().match(/how many|different|types of|all|count/i) !== null && 
+        question.toLowerCase().match(/cards?|types?/i) !== null) {
+      
+      specializedInstructions = `
+**For Card and Type Enumeration Questions:**
+1. First identify and list ALL relevant items from the provided information.
+2. When counting "different" items, count by UNIQUE NAMES, not by ID numbers.
+3. Items with the same name but different IDs should be counted ONCE.
+4. For each unique item, include:
+   - The item name
+   - A brief description of its function (if available)
+   - Where it appears (base game, expansion, etc.) if that information is available
+5. After listing all unique items by name, provide the TOTAL COUNT of unique names.
+6. Report the count as "There are X different [item type] in the game."
+`;
+    } else {
+      // Use regular enumeration instructions
+      specializedInstructions = `
+**For Enumeration Questions:**
+1. First identify and list ALL relevant items from the provided information.
+2. For each item, include its name and any distinguishing characteristics.
+3. After listing all items, provide a count or summary.
+4. If items come from different sources (base game, expansions), organize them accordingly.
+`;
+    }
+  } else if (isComparison) {
+    specializedInstructions = `
+**For Comparison Questions:**
+1. Identify the characteristics of BOTH items being compared.
+2. Create a structured comparison addressing similarities first, then differences.
+3. When relevant, explain the strategic implications or use cases for each.
+4. Ensure your comparison covers all aspects: mechanics, timing, interactions with other rules.
+`;
+  } else if (isInteraction) {
+    specializedInstructions = `
+**For Interaction Questions:**
+1. Identify the full rules text for EACH element in the interaction.
+2. Determine the sequence of events or timing involved.
+3. Explain how the rules for each component apply in the specific scenario.
+4. If there are edge cases or exceptions, address them clearly.
+`;
+  } else if (isReasoning) {
+    specializedInstructions = `
+**For Complex Reasoning Questions:**
+1. Break down the scenario into its component parts.
+2. Identify all relevant rules that apply to each component.
+3. Apply the rules in the correct sequence, explaining the outcome at each step.
+4. For "why" questions, explain the game design reasoning if apparent from the rules.
+5. For hypothetical scenarios, clearly state if certain outcomes depend on specific conditions.
+`;
+  }
+  
+  // Calculate information completeness rating to help LLM understand context quality
+  // Basic version - could be made more sophisticated
+  const contextCompleteness = calculateContextCompleteness(question, sections);
+  const completenessNote = contextCompleteness < 0.7 
+    ? "\n\nNOTE: The provided information may be incomplete for this question. Be explicit about what aspects can be confidently answered based on available information."
+    : "";
+  
   return `
 You are a helpful assistant for the board game "${gameName}".
 
+${chatHistory?.length ? 'This is a follow-up to a previous conversation.' : ''}
 The user asked: "${question}"
 
-Here is the relevant information:${contextQualityNote}
+${chatHistory?.length ? chatHistoryText : ''}
+
+Here is the relevant information:${contextQualityNote}${completenessNote}
 
 ${context}
 
-**Your Role:** You are an expert assistant for the board game Arcs. Your goal is to provide accurate, concise answers.
+**Your Role:** You are an expert assistant for board games. Your goal is to provide accurate, concise answers about ${gameName}.
 
 **CRITICAL: NEVER INVENT OR HALLUCINATE INFORMATION. If information is truly missing and cannot be reasonably deduced from the provided content, state that it isn't provided.**
+
+${specializedInstructions}
 
 **Reasoning and Problem-Solving Approach:**
 
@@ -69,13 +187,15 @@ ${context}
 2. **Connect Related Concepts:** Consider how these rules interact with each other and form logical connections.
    
 3. **Step-by-Step Reasoning:** When appropriate, use step-by-step reasoning to reach conclusions:
-   - For counting questions (e.g., "How many X are there?"), list all instances found and then count them
+   - For counting questions, list all instances found and then count them
    - For rules interactions, explain how different rules work together
    - For complex scenarios, break down into component parts
 
 4. **Logical Deduction:** Make reasonable deductions based on rule combinations. Be confident in conclusions that logically follow from the rules, even if not explicitly stated.
 
 5. **Enumerate When Appropriate:** For questions about quantities or lists, explicitly enumerate all relevant items before drawing conclusions.
+
+${chatHistory?.length ? '6. **Consider Conversation Context:** If this is a follow-up question, use the previous conversation to understand what the user is asking about. The user may be referring to concepts or questions from earlier in the conversation without explicitly restating them.' : ''}
 
 **Original Instructions (Still Apply):**
 
@@ -113,19 +233,32 @@ ${context}
     * Do NOT refer to page numbers or document names.
     * Never apologize for lack of information.
 
-**Examples of Good Reasoning:**
-
-Example 1: "How many Union cards are there?"
-Good Answer: "There are 5 Union cards in the game: [Card 1], [Card 2], [Card 3], [Card 4], and [Card 5]. This can be determined by identifying all unique Union cards mentioned in the rules.
-
-Confidence: High"
-
-Example 2: "Can multiple Admin Union cards be played on the same Administration action card?
-Good Answer: "No, since an action card can only be claimed by one player,you cannot play multiple Admin Union cards on the same Administration action card."
-
 Remember that the user is in the middle of a game and needs clear, direct answers, but accuracy is more important than completeness.
 `;
 };
+
+// Helper function to estimate context completeness
+function calculateContextCompleteness(question: string, sections: VectorSearchResult[]): number {
+  // Simplified version - evaluate based on presence of key terms and similarity scores
+  const keyTerms = extractKeyTerms(question);
+  
+  // Calculate how many key terms are found in the sections
+  const termCoverage = keyTerms.map(term => {
+    const termPresent = sections.some(section => 
+      section.content.toLowerCase().includes(term.toLowerCase())
+    );
+    return termPresent ? 1 : 0;
+  });
+  
+  // Calculate average term coverage and similarity
+  const termCoverageScore = termCoverage.reduce((sum, val) => sum + val, 0) / Math.max(keyTerms.length, 1);
+  const similarityScore = sections.length > 0 
+    ? sections.reduce((sum, section) => sum + section.similarity, 0) / sections.length 
+    : 0;
+  
+  // Weight and combine scores
+  return (termCoverageScore * 0.7) + (similarityScore * 0.3);
+}
 
 export function useGameRules(gameId: string): UseGameRulesReturn {
   // Get Supabase client via hook - this is safe here
@@ -149,14 +282,21 @@ export function useGameRules(gameId: string): UseGameRulesReturn {
 
   // Mutation to ask question using hybrid search for context
   const askMutation = useMutation<string, Error, AskQuestionVariables>({
-    mutationFn: async ({ question }: AskQuestionVariables) => {
-      // Ensure game name is available (needed for prompt)
+    mutationFn: async ({ question, chatHistory }: AskQuestionVariables) => {
+      // Ensure game name is available
       const gameName = rulesQuery.data?.game;
       if (!gameName) {
         throw new Error('Game information not loaded yet.'); 
       }
 
-      // Preprocess the query to get improved search terms
+      // Get query classifications right at the beginning
+      const queryTypes = classifyQuery(question);
+      const isEnumerationQuestion = queryTypes.includes('ENUMERATION_QUESTION');
+      const isCardEnumerationQuestion = 
+        (isEnumerationQuestion || question.toLowerCase().match(/how many|different|types of|all|count/i) !== null) && 
+        question.toLowerCase().match(/cards?|types?/i) !== null;
+      
+      // Preprocess the query
       const expandedQueries = preprocessQuery(question);
       console.log(`[Hybrid Search] Using ${expandedQueries.length} query variations`);
       
@@ -164,98 +304,103 @@ export function useGameRules(gameId: string): UseGameRulesReturn {
       console.log(`[Hybrid Search] Starting vector searches`);
       let allVectorResults: VectorSearchResult[] = [];
       
-      // Sequential search using all expanded queries
+      // Execute searches
       for (const expandedQuery of expandedQueries) {
         console.log(`[Hybrid Search] Vector search for: "${expandedQuery}"`);
         const results = await fetchRelevantSectionsFromVectorDb(supabase, expandedQuery);
         console.log(`[Hybrid Search] Found ${results.length} results for variation`);
-        
-        // Add results to combined set
         allVectorResults = [...allVectorResults, ...results];
       }
       
-      // Deduplicate vector results
+      // Simple deduplication without using the name-based approach yet
       const vectorResults = allVectorResults.filter((result, index, self) => 
-        index === self.findIndex((r) => r.id === result.id)
+        index === self.findIndex(r => r.id === result.id)
       );
       
-      console.log(`[Hybrid Search] Total unique vector results: ${vectorResults.length}`);
+      // For complex questions, lower the deduplication strictness to gather more diverse context
+      let dedupThreshold = queryTypes.some(type => 
+        ['REASONING_QUESTION', 'COMPARISON_QUESTION', 'INTERACTION_QUESTION'].includes(type)
+      ) ? 0.3 : 0.8;
       
-      // For conceptual questions like "how to win", do a second search with broader terms
-      if (vectorResults.length < 2) {
-        const broadQuery = question.toLowerCase().includes("win") ? 
-          "victory conditions win game objective" : question;
-        
-        if (broadQuery !== question) {
-          console.log(`[Hybrid Search] Broadening vector search with: "${broadQuery}"`);
-          const additionalSections = await fetchRelevantSectionsFromVectorDb(supabase, broadQuery);
-          console.log(`[Hybrid Search] Broadened search returned ${additionalSections.length} results`);
-          
-          // Add additional results
-          const combinedVectorResults = [...vectorResults, ...additionalSections];
-          
-          // Deduplicate again
-          vectorResults.splice(0, vectorResults.length, ...combinedVectorResults.filter((result, index, self) => 
-            index === self.findIndex((r) => r.id === result.id)
-          ));
-          
-          console.log(`[Hybrid Search] Total unique vector results after broadening: ${vectorResults.length}`);
-        }
-      }
+      // Different deduplication strategies based on question type
+      const isDedupByName = isCardEnumerationQuestion; // Use name-based dedup for card enumeration
       
-      // Step 2: Perform text search using existing functionality
-      console.log(`[Hybrid Search] Performing text search for original and expanded queries`);
-      // Get the rules data (using either from rulesQuery or fetch it if needed)
-      const rulesData = rulesQuery.data?.rules || await fetchGameRules(gameId);
-      
-      // Try text search with both original and expanded queries
-      let allTextResults: any[] = [];
-      for (const expandedQuery of expandedQueries) {
-        const results = findRelevantSections(rulesData, expandedQuery);
-        allTextResults = [...allTextResults, ...results];
-      }
-      
-      // Deduplicate text results by title
-      const textResults = allTextResults.filter((result, index, self) => 
-        index === self.findIndex((r) => r.title === result.title)
-      );
-      
-      console.log(`[Hybrid Search] Text search returned ${textResults.length} unique results`);
-      
-      // Step 3: Convert text results to match vector result format
-      const formattedTextResults: VectorSearchResult[] = textResults.map((item, index) => ({
-        id: `text-${index}`,
-        content: typeof item.content === 'string' ? item.content : JSON.stringify(item.content),
-        metadata: {
-          source_heading: item.title,
-          headings: [item.title],
-          content_type: item.sourceType?.toLowerCase() || 'other',
-          source: 'text_search'
-        },
-        similarity: 0.7 - (index * 0.05) // Assign decreasing similarity scores
-      }));
-      
-      // Step 4: Combine and deduplicate results
+      // Deduplicate vector results with adaptable strategy
       const allResults = [...vectorResults];
       
-      // Add text results, avoiding duplicates
-      for (const textResult of formattedTextResults) {
-        // Simple deduplication check based on content
-        const isDuplicate = vectorResults.some(vr => {
-          const vrPreview = vr.content.substring(0, 100).toLowerCase();
-          const trPreview = textResult.content.substring(0, 100).toLowerCase();
-          return vrPreview.includes(trPreview) || trPreview.includes(vrPreview);
-        });
+      // For complex questions or low result count, try adding broader context
+      if ((queryTypes.some(type => 
+        ['REASONING_QUESTION', 'COMPARISON_QUESTION', 'INTERACTION_QUESTION'].includes(type)
+      ) && vectorResults.length < 5) || vectorResults.length < 2) {
+        // Add broader search with multiple variations
+        const broaderQueries = [];
         
-        if (!isDuplicate) {
-          allResults.push(textResult);
+        if (isEnumerationQuestion) {
+          // Extract subject of enumeration for broader search
+          const match = question.toLowerCase().match(/how many (.+?)(\s|are|\?|$)/i) || 
+                       question.toLowerCase().match(/what are (?:all|the) (.+?)(\s|\?|$)/i);
+          if (match && match[1]) {
+            broaderQueries.push(`${match[1].trim()} types list all`);
+          }
+        } else if (queryTypes.some(type => 
+          ['REASONING_QUESTION', 'COMPARISON_QUESTION', 'INTERACTION_QUESTION'].includes(type)
+        )) {
+          // Extract key terms for broader search
+          const keyTerms = extractKeyTerms(question);
+          keyTerms.forEach(term => {
+            broaderQueries.push(`${term} rules mechanics interactions`);
+          });
+        }
+        
+        // Perform additional searches with broader queries
+        for (const broadQuery of broaderQueries) {
+          const additionalSections = await fetchRelevantSectionsFromVectorDb(supabase, broadQuery);
+          // Add to results with deduplication
+          allResults.push(...additionalSections);
         }
       }
       
-      // Sort by similarity and take top results
+      // If initial search doesn't yield good results, refine the search
+      if (allResults.length < 3 || 
+          allResults.every(result => result.similarity < 0.55)) {
+        console.log(`[Hybrid Search] Initial results insufficient, attempting refinement`);
+        
+        // 1. Try query reformulation
+        const reformulatedQuery = reformulateQuery(question);
+        if (reformulatedQuery !== question) {
+          console.log(`[Hybrid Search] Trying reformulated query: "${reformulatedQuery}"`);
+          const refinedResults = await fetchRelevantSectionsFromVectorDb(supabase, reformulatedQuery);
+          
+          // Add to results set and deduplicate
+          allResults = [...allResults, ...refinedResults];
+          // ...deduplication code...
+        }
+        
+        // 2. Try focused searches on key entities (especially for enumeration)
+        if (isEnumerationQuestion) {
+          const subject = extractSubject(question);
+          if (subject) {
+            console.log(`[Hybrid Search] Running focused search on subject: "${subject}"`);
+            const subjectResults = await fetchRelevantSectionsFromVectorDb(
+              supabase, 
+              `${subject} list all types complete`
+            );
+            
+            // Add to results set with high priority
+            allResults.unshift(...subjectResults);
+            // ...deduplication code...
+          }
+        }
+      }
+      
+      // Determine result limit based on question type
+      const resultLimit = isCardEnumerationQuestion ? 15 : 
+        (isEnumerationQuestion ? 12 : 8);
+      
+      // Sort by similarity and take top results with dynamic limit
       const finalResults = allResults
         .sort((a, b) => b.similarity - a.similarity)
-        .slice(0, 8);
+        .slice(0, resultLimit);
       
       // Log combined results for debugging
       console.log(`[Hybrid Search] Final combined results: ${finalResults.length}`);
@@ -266,8 +411,8 @@ export function useGameRules(gameId: string): UseGameRulesReturn {
       });
 
       if (finalResults.length > 0) {
-        // Use combined results to build prompt
-        const prompt = buildPrompt(gameName, question, finalResults);
+        // Use combined results to build prompt, now including chat history
+        const prompt = buildPrompt(gameName, question, finalResults, chatHistory);
         const response = await getLLMCompletion({ prompt }); 
         return response;
       } else {
@@ -297,4 +442,68 @@ export function useGameRules(gameId: string): UseGameRulesReturn {
     askMutation,    
     getFallbackResponse 
   };
+}
+
+// Helper function to extract key terms from a question
+function extractKeyTerms(question: string): string[] {
+  const lowerQuestion = question.toLowerCase();
+  const stopWords = ['a', 'an', 'the', 'in', 'on', 'at', 'for', 'to', 'with', 'by', 'about', 
+                     'how', 'what', 'why', 'when', 'where', 'who', 'which', 'is', 'are', 'do', 
+                     'does', 'can', 'could', 'would', 'should', 'if'];
+  
+  // Split by common separators and clean up
+  const tokens = lowerQuestion
+    .replace(/[?.!,;:()]/g, ' ')
+    .split(' ')
+    .map(t => t.trim())
+    .filter(t => t.length > 2 && !stopWords.includes(t));
+  
+  // Identify key noun phrases and entities
+  const keyTerms = new Set<string>();
+  
+  // Simple bigram detection (could be improved with NLP)
+  for (let i = 0; i < tokens.length - 1; i++) {
+    const bigram = `${tokens[i]} ${tokens[i+1]}`;
+    keyTerms.add(bigram);
+  }
+  
+  // Add important single tokens
+  tokens.forEach(token => keyTerms.add(token));
+  
+  return Array.from(keyTerms);
+}
+
+// Helper to reformulate queries that might not get good vector matches
+function reformulateQuery(query: string): string {
+  const lowerQuery = query.toLowerCase();
+  
+  // Try to make enumeration queries more search-friendly
+  if (lowerQuery.match(/how many|what are all|list all/i)) {
+    // Extract the subject of enumeration
+    const match = lowerQuery.match(/how many (.+?)(\s|are|\?|$)/i) || 
+                  lowerQuery.match(/what are (?:all|the) (.+?)(\s|\?|$)/i) ||
+                  lowerQuery.match(/list (?:all|the) (.+?)(\s|\?|$)/i);
+    
+    if (match && match[1]) {
+      const subject = match[1].trim();
+      return `${subject} complete list all types`;
+    }
+  }
+  
+  // Try to make interaction queries more search-friendly
+  if (lowerQuery.includes(' and ') || lowerQuery.includes(' with ')) {
+    return query.replace(/ and | with /gi, ' interaction ') + ' rules interaction how works';
+  }
+  
+  // Default fallback
+  return query;
+}
+
+// Extract the subject of an enumeration question
+function extractSubject(query: string): string | null {
+  const matches = query.toLowerCase().match(/how many (.+?)(\s|are|\?|$)/i) || 
+                 query.toLowerCase().match(/what are (?:all|the) (.+?)(\s|\?|$)/i) ||
+                 query.toLowerCase().match(/list (?:all|the) (.+?)(\s|\?|$)/i);
+  
+  return matches && matches[1] ? matches[1].trim() : null;
 } 

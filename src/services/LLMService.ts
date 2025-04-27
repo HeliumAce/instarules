@@ -37,7 +37,7 @@ export const getLLMCompletion = async ({ prompt, modelPreference }: GetCompletio
   }
 
   try {
-    const model = modelPreference || 'anthropic/claude-3-sonnet:beta';
+    const model = modelPreference || 'anthropic/claude-3-opus';
 
     const response = await axios.post(
       apiEndpoint,

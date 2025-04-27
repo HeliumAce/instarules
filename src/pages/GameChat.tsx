@@ -81,8 +81,18 @@ const GameChat = () => {
     await saveMessage(currentInput, true);
     setInput('');
 
+    // Create chat history from existing messages
+    // Only include the last few messages to keep context reasonable
+    const chatHistory = messages.slice(-6).map(msg => ({
+      content: msg.content,
+      isUser: msg.isUser
+    }));
+
     askMutation.mutate(
-      { question: currentInput },
+      { 
+        question: currentInput,
+        chatHistory: chatHistory.length > 0 ? chatHistory : undefined 
+      },
       {
         onSuccess: handleMutationSuccess,
         onError: handleMutationError,
