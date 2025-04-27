@@ -108,24 +108,23 @@ const buildPrompt = (
       
       specializedInstructions = `
 **For Card and Type Enumeration Questions:**
-1. First identify and list ALL relevant items from the provided information.
-2. When counting "different" items, count by UNIQUE NAMES, not by ID numbers.
-3. Items with the same name but different IDs should be counted ONCE.
-4. For each unique item, include:
-   - The item name
-   - A brief description of its function (if available)
-   - Where it appears (base game, expansion, etc.) if that information is available
-5. After listing all unique items by name, provide the TOTAL COUNT of unique names.
-6. Report the count as "There are X different [item type] in the game."
+1. When counting "different" items, count by UNIQUE NAMES, not by ID numbers.
+2. List ONLY the names of the items, nothing more, unless specifically asked for details.
+3. For "how many" questions, provide the number after listing the items.
+4. Format as a simple bulleted list of names with minimal description.
+5. Example format:
+   "There are X different [item type]:
+   - Item 1
+   - Item 2"
 `;
     } else {
       // Use regular enumeration instructions
       specializedInstructions = `
 **For Enumeration Questions:**
-1. First identify and list ALL relevant items from the provided information.
-2. For each item, include its name and any distinguishing characteristics.
-3. After listing all items, provide a count or summary.
-4. If items come from different sources (base game, expansions), organize them accordingly.
+1. List only the requested items with minimal description.
+2. Include only what was specifically asked for.
+3. Format as a simple bulleted list.
+4. End with the total count if that was requested.
 `;
     }
   } else if (isComparison) {
@@ -155,6 +154,17 @@ const buildPrompt = (
 `;
   }
   
+  // Add specific handling for "how much/many" questions
+  if (question.toLowerCase().match(/^how (much|many)/i)) {
+    specializedInstructions += `
+**For "How Much/Many" Questions:**
+1. Provide a direct, quantitative answer.
+2. If a simple number or amount is the answer, state ONLY that with minimal context.
+3. Do not explain game mechanics or provide additional context unless essential.
+4. Example format: "[Item] does/has/is [amount/number]."
+`;
+  }
+  
   // Calculate information completeness rating to help LLM understand context quality
   // Basic version - could be made more sophisticated
   const contextCompleteness = calculateContextCompleteness(question, sections);
@@ -162,11 +172,19 @@ const buildPrompt = (
     ? "\n\nNOTE: The provided information may be incomplete for this question. Be explicit about what aspects can be confidently answered based on available information."
     : "";
   
+  // Add a conciseness instruction at the top of the prompt
+  const conciseInstruction = `
+**IMPORTANT:**
+Answer the question completely with all directly relevant information, but exclude tangential details not specifically requested.
+`;
+
   return `
 You are a helpful assistant for the board game "${gameName}".
 
 ${chatHistory?.length ? 'This is a follow-up to a previous conversation.' : ''}
 The user asked: "${question}"
+
+${conciseInstruction}
 
 ${chatHistory?.length ? chatHistoryText : ''}
 
@@ -174,7 +192,7 @@ Here is the relevant information:${contextQualityNote}${completenessNote}
 
 ${context}
 
-**Your Role:** You are an expert assistant for board games. Your goal is to provide accurate, concise answers about ${gameName}.
+**Your Role:** You are an expert assistant for board games. Your goal is to provide accurate, complete, and focused answers about ${gameName}.
 
 **CRITICAL: NEVER INVENT OR HALLUCINATE INFORMATION. If information is truly missing and cannot be reasonably deduced from the provided content, state that it isn't provided.**
 
@@ -182,7 +200,7 @@ ${specializedInstructions}
 
 **Reasoning and Problem-Solving Approach:**
 
-1. **Systematic Analysis:** First identify ALL relevant rules and information pieces from the provided context.
+1. **Systematic Analysis:** First identify ALL relevant rules and information pieces from the provided context that directly answer the question.
    
 2. **Connect Related Concepts:** Consider how these rules interact with each other and form logical connections.
    
