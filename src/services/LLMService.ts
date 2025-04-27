@@ -37,7 +37,7 @@ export const getLLMCompletion = async ({ prompt, modelPreference }: GetCompletio
   }
 
   try {
-    const model = modelPreference || 'anthropic/claude-3-sonnet:beta';
+    const model = modelPreference || 'google/gemini-2.0-flash-001';
 
     const response = await axios.post(
       apiEndpoint,

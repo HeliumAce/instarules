@@ -75,6 +75,29 @@ serve(async (req) => {
 
     try {
       console.log(`Calling RPC function 'match_arcs_rules' with threshold ${matchThreshold}, count ${matchCount}`);
+      
+      // Extract query features to determine search parameters
+      const isEnumeration = query.toLowerCase().match(/how many|list all|what are all|count/i) !== null;
+      const isCardEnumeration = isEnumeration && query.toLowerCase().match(/cards?|types?/i) !== null;
+      const isReasoning = query.toLowerCase().match(/why|when would|if i|what happens if|explain how/i) !== null;
+      const isComparison = query.toLowerCase().match(/difference between|compared to|versus|vs|instead of/i) !== null;
+      const isInteraction = query.toLowerCase().match(/interact|work with|combined|together/i) !== null;
+      
+      // Adjust threshold and count based on question type
+      if (isCardEnumeration) {
+        // Card enumeration needs many results with lower threshold
+        matchThreshold = 0.42; // Lower threshold to catch more card listings
+        matchCount = 18;     // More results to ensure complete listings
+      } else if (isEnumeration) {
+        // Regular enumeration
+        matchThreshold = 0.45;
+        matchCount = 15;
+      } else if (isReasoning || isComparison || isInteraction) {
+        // Complex reasoning needs more diverse, high-quality results
+        matchThreshold = 0.52; // Higher threshold for more relevant results
+        matchCount = 12;     // More results to get comprehensive context
+      }
+      
       let { data: searchData, error: rpcError } = await supabaseAdmin.rpc('match_arcs_rules', {
         query_embedding: queryEmbedding,
         match_threshold: matchThreshold,
