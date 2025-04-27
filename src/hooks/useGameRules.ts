@@ -120,6 +120,9 @@ Good Answer: "There are 5 Union cards in the game: [Card 1], [Card 2], [Card 3],
 
 Confidence: High"
 
+Example 2: "Can multiple Admin Union cards be played on the same Administration action card?
+Good Answer: "No, since an action card can only be claimed by one player,you cannot play multiple Admin Union cards on the same Administration action card."
+
 Remember that the user is in the middle of a game and needs clear, direct answers, but accuracy is more important than completeness.
 `;
 };
