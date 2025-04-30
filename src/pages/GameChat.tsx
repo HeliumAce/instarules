@@ -174,8 +174,8 @@ const GameChat = () => {
                       className={cn(
                         "w-full rounded-xl p-4",
                         message.isUser
-                          ? "bg-accent/90 text-white"
-                          : "bg-muted text-foreground"
+                          ? "bg-[hsl(var(--chat-message))] text-white"
+                          : "text-foreground"
                       )}
                     >
                       {message.isUser ? (
