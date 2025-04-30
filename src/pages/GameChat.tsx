@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { useParams, Navigate } from 'react-router-dom';
 import { SendHorizontal, Loader2, Trash2 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
-import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { useGameContext } from '@/context/GameContext';
 import { Message } from '@/types/game';
@@ -24,21 +24,6 @@ const GameChat = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { rulesQuery, askMutation, getFallbackResponse } = useGameRules(gameId || '');
   const { messages, loading: messagesLoading, error: messagesError, saveMessage, clearMessages } = useChatMessages(gameId || '');
-  const welcomeShownRef = useRef(false);
-
-  useEffect(() => {
-    const showWelcomeMessage = async () => {
-      if (!welcomeShownRef.current && !messagesLoading && messages.length === 0 && game && user) {
-        welcomeShownRef.current = true;
-        await saveMessage(
-          `Ask me any questions about ${game.title} rules, setup, or gameplay.`,
-          false
-        );
-      }
-    };
-    
-    showWelcomeMessage();
-  }, [messagesLoading, messages.length, game, saveMessage, user]);
 
   useEffect(() => {
     scrollToBottom();
@@ -104,7 +89,6 @@ const GameChat = () => {
     try {
       setIsClearing(true);
       await clearMessages();
-      welcomeShownRef.current = false;
       askMutation.reset();
     } catch (error) {
       console.error('Error clearing messages:', error);
@@ -210,10 +194,10 @@ const GameChat = () => {
         </div>
       </div>
 
-      <footer className="border-t border-border bg-background p-4">
+      <footer className="bg-background p-4">
         <form onSubmit={handleSubmit} className="mx-auto max-w-3xl">
-          <div className="relative flex items-center">
-            <Input
+          <div className="relative">
+            <Textarea
               value={input}
               onChange={(e) => setInput(e.target.value)}
               placeholder={
@@ -221,13 +205,13 @@ const GameChat = () => {
                 : isAsking ? "Processing your question..." 
                 : "Ask about rules, setup, or gameplay..."
               }
-              className="flex-1 bg-muted text-foreground pr-12"
+              className="flex-1 bg-muted text-foreground pr-12 h-[130px] resize-none rounded-md"
               disabled={isAsking || isRulesLoading || isRulesError || !rulesQuery.data}
             />
             <Button 
               type="submit" 
               disabled={isAsking || isRulesLoading || isRulesError || !input.trim() || !rulesQuery.data}
-              className="absolute right-2 p-2 h-auto"
+              className="absolute top-2 right-2 p-2 h-auto"
               variant="ghost"
             >
               {isAsking ? (
