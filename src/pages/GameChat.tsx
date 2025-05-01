@@ -186,7 +186,7 @@ const GameChat = () => {
                           </div>
                           
                           {/* Feedback icons and confidence score for non-user messages */}
-                          <div className="flex items-center pt-1 mt-1 border-t border-muted/20 opacity-0 group-hover/message:opacity-100 transition-opacity">
+                          <div className="flex items-center justify-end pt-1 mt-1 border-t border-muted/20 transition-opacity">
                             <div className="flex -space-x-px">
                               <button 
                                 className="p-1.5 transition-colors active:scale-95"
@@ -194,7 +194,7 @@ const GameChat = () => {
                                 onClick={() => handleFeedback(message.id, 'thumbsUp')}
                                 aria-pressed={messageFeedback[message.id] === 'thumbsUp'}
                               >
-                                <ThumbsUp size={20} className="text-muted-foreground transition-colors hover:text-foreground" />
+                                <ThumbsUp size={16} className="text-muted-foreground transition-colors hover:text-foreground" />
                               </button>
                               <button 
                                 className="p-1.5 transition-colors active:scale-95"
@@ -202,7 +202,7 @@ const GameChat = () => {
                                 onClick={() => handleFeedback(message.id, 'thumbsDown')}
                                 aria-pressed={messageFeedback[message.id] === 'thumbsDown'}
                               >
-                                <ThumbsDown size={20} className="text-muted-foreground transition-colors hover:text-foreground" />
+                                <ThumbsDown size={16} className="text-muted-foreground transition-colors hover:text-foreground" />
                               </button>
                               <div className="w-px h-full bg-muted/20"></div>
                               <button 
@@ -210,24 +210,15 @@ const GameChat = () => {
                                 title="Edit this question"
                                 onClick={() => console.log('Edit clicked')}
                               >
-                                <Pencil size={20} className="text-muted-foreground transition-colors hover:text-foreground" />
+                                <Pencil size={16} className="text-muted-foreground transition-colors hover:text-foreground" />
                               </button>
                             </div>
                             
                             {/* Confidence score indicator */}
                             {message.confidence && (
-                              <div className="ml-auto flex items-center">
-                                <span 
-                                  className={cn(
-                                    "text-xs font-medium",
-                                    message.confidence === 'High' && "text-[hsl(var(--confidence-high))]",
-                                    message.confidence === 'Medium' && "text-[hsl(var(--confidence-medium))]",
-                                    message.confidence === 'Low' && "text-[hsl(var(--confidence-low))]"
-                                  )}
-                                >
-                                  {message.confidence} confidence
-                                </span>
-                              </div>
+                              <span className="text-xs text-muted-foreground ml-2">
+                                {message.confidence} confidence
+                              </span>
                             )}
                           </div>
                         </>
