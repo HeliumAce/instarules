@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useParams, Navigate } from 'react-router-dom';
-import { SendHorizontal, Loader2, Trash2 } from 'lucide-react';
+import { SendHorizontal, Loader2, Trash2, ThumbsUp, ThumbsDown, Pencil } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
@@ -24,6 +24,7 @@ const GameChat = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { rulesQuery, askMutation, getFallbackResponse } = useGameRules(gameId || '');
   const { messages, loading: messagesLoading, error: messagesError, saveMessage, clearMessages } = useChatMessages(gameId || '');
+  const [messageFeedback, setMessageFeedback] = useState<Record<string, 'thumbsUp' | 'thumbsDown' | null>>({});
 
   useEffect(() => {
     scrollToBottom();
@@ -97,6 +98,18 @@ const GameChat = () => {
     }
   };
 
+  const handleFeedback = (messageId: string, type: 'thumbsUp' | 'thumbsDown') => {
+    setMessageFeedback(prev => {
+      if (prev[messageId] === type) {
+        const newFeedback = { ...prev };
+        delete newFeedback[messageId];
+        return newFeedback;
+      }
+      return { ...prev, [messageId]: type };
+    });
+    console.log(`Message ${messageId} feedback: ${type}`);
+  };
+
   const isRulesLoading = rulesQuery.isLoading;
   const isRulesError = rulesQuery.isError;
   const isAsking = askMutation.isPending;
@@ -125,7 +138,7 @@ const GameChat = () => {
 
       <div className="flex-1 overflow-y-auto">
         <div className="flex min-h-full flex-col justify-end">
-          <div className="mx-auto max-w-3xl space-y-6 px-4 w-full py-4">
+          <div className="mx-auto max-w-3xl space-y-3 px-4 w-full py-2">
             {messagesError && (
               <Alert variant="destructive">
                 <AlertDescription>
@@ -156,20 +169,52 @@ const GameChat = () => {
                   >
                     <div
                       className={cn(
-                        "w-full rounded-xl p-4",
+                        "w-full rounded-xl relative group/message",
                         message.isUser
-                          ? "bg-[hsl(var(--chat-message))] text-white"
-                          : "text-foreground"
+                          ? "bg-[hsl(var(--chat-message))] text-white p-4"
+                          : "text-foreground p-4 pb-2"
                       )}
                     >
                       {message.isUser ? (
                         <p className="text-sm md:text-base">{message.content}</p>
                       ) : (
-                        <div className="text-sm md:text-base prose prose-invert max-w-none">
-                          <ReactMarkdown>
-                            {message.content}
-                          </ReactMarkdown>
-                        </div>
+                        <>
+                          <div className="text-sm md:text-base prose prose-invert max-w-none">
+                            <ReactMarkdown>
+                              {message.content}
+                            </ReactMarkdown>
+                          </div>
+                          
+                          {/* Feedback icons for non-user messages */}
+                          <div className="flex items-center pt-1 mt-1 border-t border-muted/20 opacity-0 group-hover/message:opacity-100 transition-opacity">
+                            <div className="flex -space-x-px">
+                              <button 
+                                className="p-1.5 transition-colors active:scale-95"
+                                title="Helpful"
+                                onClick={() => handleFeedback(message.id, 'thumbsUp')}
+                                aria-pressed={messageFeedback[message.id] === 'thumbsUp'}
+                              >
+                                <ThumbsUp size={20} className="text-muted-foreground transition-colors hover:text-foreground" />
+                              </button>
+                              <button 
+                                className="p-1.5 transition-colors active:scale-95"
+                                title="Not helpful"
+                                onClick={() => handleFeedback(message.id, 'thumbsDown')}
+                                aria-pressed={messageFeedback[message.id] === 'thumbsDown'}
+                              >
+                                <ThumbsDown size={20} className="text-muted-foreground transition-colors hover:text-foreground" />
+                              </button>
+                              <div className="w-px h-full bg-muted/20"></div>
+                              <button 
+                                className="p-1.5 transition-colors active:scale-95"
+                                title="Edit this question"
+                                onClick={() => console.log('Edit clicked')}
+                              >
+                                <Pencil size={20} className="text-muted-foreground transition-colors hover:text-foreground" />
+                              </button>
+                            </div>
+                          </div>
+                        </>
                       )}
                     </div>
                   </div>
@@ -194,7 +239,7 @@ const GameChat = () => {
         </div>
       </div>
 
-      <footer className="bg-background p-4">
+      <footer className="bg-background pt-1 pb-3 px-4">
         <form onSubmit={handleSubmit} className="mx-auto max-w-3xl">
           <div className="relative">
             <Textarea
