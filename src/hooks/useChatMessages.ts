@@ -10,6 +10,21 @@ export function useChatMessages(gameId: string) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
+  // Parse confidence from messages
+  const parseConfidence = (content: string): 'High' | 'Medium' | 'Low' | undefined => {
+    // Look for "Confidence: [Level]" at the end of the message
+    const matches = content.match(/Confidence:\s*(High|Medium|Low)\s*$/i);
+    if (matches && matches[1]) {
+      return matches[1] as 'High' | 'Medium' | 'Low';
+    }
+    return undefined;
+  };
+
+  // Remove confidence indicator from display content
+  const removeConfidenceText = (content: string): string => {
+    return content.replace(/Confidence:\s*(High|Medium|Low)\s*$/i, '').trim();
+  };
+
   // Load messages on mount
   useEffect(() => {
     let mounted = true;
@@ -33,12 +48,19 @@ export function useChatMessages(gameId: string) {
         if (!mounted) return;
 
         setMessages(
-          data.map((msg) => ({
-            id: msg.id,
-            content: msg.content,
-            isUser: msg.is_user,
-            timestamp: new Date(msg.created_at),
-          }))
+          data.map((msg) => {
+            const content = msg.content;
+            const confidence = !msg.is_user ? parseConfidence(content) : undefined;
+            const displayContent = !msg.is_user ? removeConfidenceText(content) : content;
+            
+            return {
+              id: msg.id,
+              content: displayContent,
+              isUser: msg.is_user,
+              timestamp: new Date(msg.created_at),
+              confidence,
+            };
+          })
         );
       } catch (err) {
         console.error('Error loading messages:', err);
@@ -66,13 +88,18 @@ export function useChatMessages(gameId: string) {
         (payload) => {
           if (!mounted) return;
           const newMessage = payload.new as any;
+          const content = newMessage.content;
+          const confidence = !newMessage.is_user ? parseConfidence(content) : undefined;
+          const displayContent = !newMessage.is_user ? removeConfidenceText(content) : content;
+          
           setMessages((prev) => [
             ...prev,
             {
               id: newMessage.id,
-              content: newMessage.content,
+              content: displayContent,
               isUser: newMessage.is_user,
               timestamp: new Date(newMessage.created_at),
+              confidence,
             },
           ]);
         }
@@ -94,13 +121,20 @@ export function useChatMessages(gameId: string) {
     }
 
     try {
+      // For AI responses, preserve the original content in the database
+      const dbContent = content;
+      
+      // For display, we want to parse and remove the confidence text
+      const confidence = !isUser ? parseConfidence(content) : undefined;
+      const displayContent = !isUser ? removeConfidenceText(content) : content;
+      
       const { data, error } = await supabase
         .from('chat_messages')
         .insert([
           {
             game_id: gameId,
             user_id: user.id,
-            content,
+            content: dbContent, // Store original in database
             is_user: isUser,
           },
         ])
@@ -111,9 +145,10 @@ export function useChatMessages(gameId: string) {
 
       const newMessage: Message = {
         id: data.id,
-        content: data.content,
+        content: displayContent, // Modify for display
         isUser: data.is_user,
         timestamp: new Date(data.created_at),
+        confidence,
       };
 
       // Optimistically update the messages state

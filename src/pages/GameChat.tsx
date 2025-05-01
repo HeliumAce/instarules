@@ -185,7 +185,7 @@ const GameChat = () => {
                             </ReactMarkdown>
                           </div>
                           
-                          {/* Feedback icons for non-user messages */}
+                          {/* Feedback icons and confidence score for non-user messages */}
                           <div className="flex items-center pt-1 mt-1 border-t border-muted/20 opacity-0 group-hover/message:opacity-100 transition-opacity">
                             <div className="flex -space-x-px">
                               <button 
@@ -213,6 +213,22 @@ const GameChat = () => {
                                 <Pencil size={20} className="text-muted-foreground transition-colors hover:text-foreground" />
                               </button>
                             </div>
+                            
+                            {/* Confidence score indicator */}
+                            {message.confidence && (
+                              <div className="ml-auto flex items-center">
+                                <span 
+                                  className={cn(
+                                    "text-xs font-medium",
+                                    message.confidence === 'High' && "text-[hsl(var(--confidence-high))]",
+                                    message.confidence === 'Medium' && "text-[hsl(var(--confidence-medium))]",
+                                    message.confidence === 'Low' && "text-[hsl(var(--confidence-low))]"
+                                  )}
+                                >
+                                  {message.confidence} confidence
+                                </span>
+                              </div>
+                            )}
                           </div>
                         </>
                       )}

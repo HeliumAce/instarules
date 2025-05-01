@@ -75,6 +75,11 @@
 
     /* Very dark gray used for user chat message bubbles */
     --chat-message: 0 0% 8%;
+    
+    /* Confidence score colors */
+    --confidence-high: 120 91% 35%;   /* #05AC08 */
+    --confidence-medium: 49 100% 50%; /* #FFCA00 */
+    --confidence-low: 360 85% 52%;    /* #EC221F */
   }
 }
 
