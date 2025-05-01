@@ -6,54 +6,85 @@
 
 @layer base {
   :root {
+    /* Dark gray used as main app background */
     --background: 0 0% 15%;
+    /* Off-white used for main text color throughout app */
     --foreground: 0 0% 98%;
 
+    /* Slightly darker background for card components */
     --card: 0 0% 13%;
+    /* Text color used on cards */
     --card-foreground: 0 0% 98%;
 
+    /* Background color for dropdowns and popovers */
     --popover: 0 0% 13%;
+    /* Text color in dropdowns and popovers */
     --popover-foreground: 0 0% 98%;
 
-    --primary: 258 100% 68%;
-    --primary-foreground: 0 0% 100%;
+    /* Green color used for buttons and interactive elements */
+    --primary: 96 100% 13%;
+    /* White text on primary green elements */
+    --primary-foreground: 0 0% 98%;
 
+    /* Alternative background color, used for secondary UI elements */
     --secondary: 0 0% 15%;
+    /* Text color on secondary elements */
     --secondary-foreground: 0 0% 98%;
 
+    /* Slightly lighter gray for subtle backgrounds (like chat input) */
     --muted: 0 0% 20%;
+    /* Dimmed text color for less emphasis */
     --muted-foreground: 0 0% 70%;
 
+    /* Same green used for selected/active states (like selected tabs) */
     --accent: 96 100% 13%;
-    --accent-foreground: 0 0% 100%;
+    /* White text on accent backgrounds */
+    --accent-foreground: 0 0% 98%;
 
+    /* Red color for delete/warning actions */
     --destructive: 0 84% 60%;
+    /* Text color on destructive elements */
     --destructive-foreground: 0 0% 98%;
 
+    /* Default border color used throughout app */
     --border: 0 0% 20%;
+    /* Border color specifically for input fields */
     --input: 0 0% 20%;
-    --ring: 258 100% 68%;
+    /* Green focus ring color for interactive elements */
+    --ring: 96 100% 13%;
 
+    /* Standard border radius used throughout app */
     --radius: 0.75rem;
 
+    /* Dark background color specific to sidebar */
     --sidebar-background: 0 0% 12%;
+    /* Main text color in sidebar */
     --sidebar-foreground: 0 0% 90%;
-    --sidebar-primary: 258 100% 68%;
-    --sidebar-primary-foreground: 0 0% 100%;
+    /* Green color for primary sidebar elements */
+    --sidebar-primary: 96 100% 13%;
+    /* Text color on primary sidebar elements */
+    --sidebar-primary-foreground: 0 0% 98%;
+    /* Background color for hovered/selected sidebar items */
     --sidebar-accent: 0 0% 16%;
+    /* Text color for hovered/selected sidebar items */
     --sidebar-accent-foreground: 0 0% 64%;
+    /* Border color used in sidebar */
     --sidebar-border: 0 0% 20%;
-    --sidebar-ring: 258 100% 68%;
+    /* Green focus ring color for sidebar elements */
+    --sidebar-ring: 96 100% 13%;
 
+    /* Very dark gray used for user chat message bubbles */
     --chat-message: 0 0% 8%;
   }
 }
 
 @layer base {
+  /* Applies the default border color to all elements */
   * {
     @apply border-border;
   }
 
+  /* Sets default background and text colors for the whole app */
   body {
     @apply bg-background text-foreground;
     font-feature-settings: "rlig" 1, "calt" 1;
@@ -61,23 +92,28 @@
 }
 
 @layer components {
+  /* Used for translucent panel effects */
   .glass-panel {
     @apply bg-black/20 backdrop-blur-lg border border-white/5 shadow-xl;
   }
   
+  /* Subtle scale animation on hover */
   .hover-scale {
     @apply transition-transform duration-300 ease-out hover:scale-[1.02];
   }
   
+  /* Adds a glowing border effect on hover using accent color */
   .border-glow {
     @apply border border-transparent hover:border-accent/50;
   }
   
+  /* Improves text wrapping for better readability */
   .text-balance {
     text-wrap: balance;
   }
 }
 
+/* Ensures the app takes up full viewport height */
 #root {
   @apply min-h-screen w-full;
 }
