@@ -1,8 +1,8 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useParams, Navigate } from 'react-router-dom';
-import { SendHorizontal, Loader2, Trash2 } from 'lucide-react';
+import { SendHorizontal, Loader2, Trash2, ThumbsUp, ThumbsDown, Pencil } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
-import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { useGameContext } from '@/context/GameContext';
 import { Message } from '@/types/game';
@@ -24,21 +24,7 @@ const GameChat = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { rulesQuery, askMutation, getFallbackResponse } = useGameRules(gameId || '');
   const { messages, loading: messagesLoading, error: messagesError, saveMessage, clearMessages } = useChatMessages(gameId || '');
-  const welcomeShownRef = useRef(false);
-
-  useEffect(() => {
-    const showWelcomeMessage = async () => {
-      if (!welcomeShownRef.current && !messagesLoading && messages.length === 0 && game && user) {
-        welcomeShownRef.current = true;
-        await saveMessage(
-          `Ask me any questions about ${game.title} rules, setup, or gameplay.`,
-          false
-        );
-      }
-    };
-    
-    showWelcomeMessage();
-  }, [messagesLoading, messages.length, game, saveMessage, user]);
+  const [messageFeedback, setMessageFeedback] = useState<Record<string, 'thumbsUp' | 'thumbsDown' | null>>({});
 
   useEffect(() => {
     scrollToBottom();
@@ -104,13 +90,24 @@ const GameChat = () => {
     try {
       setIsClearing(true);
       await clearMessages();
-      welcomeShownRef.current = false;
       askMutation.reset();
     } catch (error) {
       console.error('Error clearing messages:', error);
     } finally {
       setIsClearing(false);
     }
+  };
+
+  const handleFeedback = (messageId: string, type: 'thumbsUp' | 'thumbsDown') => {
+    setMessageFeedback(prev => {
+      if (prev[messageId] === type) {
+        const newFeedback = { ...prev };
+        delete newFeedback[messageId];
+        return newFeedback;
+      }
+      return { ...prev, [messageId]: type };
+    });
+    console.log(`Message ${messageId} feedback: ${type}`);
   };
 
   const isRulesLoading = rulesQuery.isLoading;
@@ -141,7 +138,7 @@ const GameChat = () => {
 
       <div className="flex-1 overflow-y-auto">
         <div className="flex min-h-full flex-col justify-end">
-          <div className="mx-auto max-w-3xl space-y-6 px-4 w-full py-4">
+          <div className="mx-auto max-w-3xl space-y-3 px-4 w-full py-2">
             {messagesError && (
               <Alert variant="destructive">
                 <AlertDescription>
@@ -172,20 +169,59 @@ const GameChat = () => {
                   >
                     <div
                       className={cn(
-                        "w-full rounded-xl p-4",
+                        "w-full rounded-xl relative group/message",
                         message.isUser
-                          ? "bg-accent/90 text-white"
-                          : "bg-muted text-foreground"
+                          ? "bg-[hsl(var(--chat-message))] text-white p-4"
+                          : "text-foreground p-4 pb-2"
                       )}
                     >
                       {message.isUser ? (
                         <p className="text-sm md:text-base">{message.content}</p>
                       ) : (
-                        <div className="text-sm md:text-base prose prose-invert max-w-none">
-                          <ReactMarkdown>
-                            {message.content}
-                          </ReactMarkdown>
-                        </div>
+                        <>
+                          <div className="text-sm md:text-base prose prose-invert max-w-none">
+                            <ReactMarkdown>
+                              {message.content}
+                            </ReactMarkdown>
+                          </div>
+                          
+                          {/* Feedback icons and confidence score for non-user messages */}
+                          <div className="flex items-center justify-end pt-1 mt-1 border-t border-muted/20 transition-opacity">
+                            <div className="flex -space-x-px">
+                              <button 
+                                className="p-1.5 transition-colors active:scale-95"
+                                title="Helpful"
+                                onClick={() => handleFeedback(message.id, 'thumbsUp')}
+                                aria-pressed={messageFeedback[message.id] === 'thumbsUp'}
+                              >
+                                <ThumbsUp size={16} className="text-muted-foreground transition-colors hover:text-foreground" />
+                              </button>
+                              <button 
+                                className="p-1.5 transition-colors active:scale-95"
+                                title="Not helpful"
+                                onClick={() => handleFeedback(message.id, 'thumbsDown')}
+                                aria-pressed={messageFeedback[message.id] === 'thumbsDown'}
+                              >
+                                <ThumbsDown size={16} className="text-muted-foreground transition-colors hover:text-foreground" />
+                              </button>
+                              <div className="w-px h-full bg-muted/20"></div>
+                              <button 
+                                className="p-1.5 transition-colors active:scale-95"
+                                title="Edit this question"
+                                onClick={() => console.log('Edit clicked')}
+                              >
+                                <Pencil size={16} className="text-muted-foreground transition-colors hover:text-foreground" />
+                              </button>
+                            </div>
+                            
+                            {/* Confidence score indicator */}
+                            {message.confidence && (
+                              <span className="text-xs text-muted-foreground ml-2">
+                                {message.confidence} confidence
+                              </span>
+                            )}
+                          </div>
+                        </>
                       )}
                     </div>
                   </div>
@@ -210,10 +246,10 @@ const GameChat = () => {
         </div>
       </div>
 
-      <footer className="border-t border-border bg-background p-4">
+      <footer className="bg-background pt-1 pb-3 px-4">
         <form onSubmit={handleSubmit} className="mx-auto max-w-3xl">
-          <div className="relative flex items-center">
-            <Input
+          <div className="relative">
+            <Textarea
               value={input}
               onChange={(e) => setInput(e.target.value)}
               placeholder={
@@ -221,13 +257,13 @@ const GameChat = () => {
                 : isAsking ? "Processing your question..." 
                 : "Ask about rules, setup, or gameplay..."
               }
-              className="flex-1 bg-muted text-foreground pr-12"
+              className="flex-1 bg-muted text-foreground pr-12 h-[130px] resize-none rounded-md"
               disabled={isAsking || isRulesLoading || isRulesError || !rulesQuery.data}
             />
             <Button 
               type="submit" 
               disabled={isAsking || isRulesLoading || isRulesError || !input.trim() || !rulesQuery.data}
-              className="absolute right-2 p-2 h-auto"
+              className="absolute top-2 right-2 p-2 h-auto"
               variant="ghost"
             >
               {isAsking ? (
