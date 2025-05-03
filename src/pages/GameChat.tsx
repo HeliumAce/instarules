@@ -15,6 +15,12 @@ import { useToast } from "@/components/ui/use-toast";
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 
+// Define empty sources data locally
+const emptySourcesData: MessageSources = {
+  count: 0,
+  sources: []
+};
+
 // Internal Sources components
 interface SourcesListProps {
   sources: Source[];
@@ -122,6 +128,7 @@ const GameChat = () => {
   const game = gameId ? getGameById(gameId) : undefined;
   const [input, setInput] = useState('');
   const [isClearing, setIsClearing] = useState(false);
+  const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { rulesQuery, askMutation, getFallbackResponse } = useGameRules(gameId || '');
   const { messages, loading: messagesLoading, error: messagesError, saveMessage, clearMessages } = useChatMessages(gameId || '');
@@ -139,45 +146,30 @@ const GameChat = () => {
     return <Navigate to="/auth" />;
   }
 
+  const handleSourceClick = (source: Source) => {
+    console.log('Source clicked:', source);
+    // TODO: Implement source click functionality (e.g., show source details)
+  };
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  const handleMutationSuccess = useCallback(async (response: string) => {
-    // TEMPORARY: Add mock sources for testing
-    const mockSources: MessageSources = {
-      count: 3,
-      sources: [
-        {
-          id: '1',
-          contentType: 'rule',
-          title: 'Core Rules',
-          bookName: 'Core Rulebook',
-          headings: ['Combat', 'Actions'],
-          sourceHeading: 'Blight Effects',
-          pageNumber: 42
-        },
-        {
-          id: '2',
-          contentType: 'rule',
-          title: 'FAQ',
-          bookName: 'FAQ Document',
-          headings: ['Common Questions'],
-          sourceHeading: 'Blight Crisis',
-          pageNumber: 15
-        },
-        {
-          id: '3',
-          contentType: 'card',
-          title: 'Blight Card',
-          cardId: 'BLT-001',
-          cardName: 'Blight'
-        }
-      ]
-    };
-
-    await saveMessage(response, false, mockSources);
-  }, [saveMessage]);
+  const handleMutationSuccess = async (response: string) => {
+    setIsTyping(false);
+    
+    let sources: MessageSources | undefined = undefined;
+    
+    // Check if response has sources attached
+    if (typeof response === 'object' && (response as any).sources) {
+      sources = (response as any).sources as MessageSources;
+      // Use string representation of the response object
+      response = String(response);
+    }
+    
+    // Save the message with sources
+    await saveMessage(response, false, sources);
+  };
 
   const handleMutationError = useCallback(async (error: Error) => {
     console.error('Error in chat interaction:', error);
@@ -199,6 +191,7 @@ const GameChat = () => {
 
     await saveMessage(currentInput, true);
     setInput('');
+    setIsTyping(true);
 
     // Create chat history from existing messages
     // Only include the last few messages to keep context reasonable
@@ -248,6 +241,27 @@ const GameChat = () => {
   const isAsking = askMutation.isPending;
   const rulesErrorMessage = rulesQuery.error?.message;
   const askErrorMessage = askMutation.error?.message;
+
+  const renderMessageFooter = (message: Message) => {
+    // Always show sources for AI messages
+    if (!message.isUser) {
+      return (
+        <div className="flex justify-between items-center text-xs text-slate-500 mt-2">
+          {message.confidence && (
+            <div className="flex items-center gap-1">
+              <CircleIcon className="w-2 h-2" />
+              <span>{message.confidence} confidence</span>
+            </div>
+          )}
+          <SourcesToggle 
+            sources={message.sources || emptySourcesData} 
+            onSourceClick={handleSourceClick}
+          />
+        </div>
+      );
+    }
+    return null;
+  };
 
   return (
     <div className="flex h-screen flex-col">
@@ -323,11 +337,8 @@ const GameChat = () => {
                             {/* Sources - show for all AI messages */}
                             {!message.isUser && (
                               <SourcesToggle 
-                                sources={message.sources || { count: 0, sources: [] }} 
-                                onSourceClick={(source) => {
-                                  // TODO: Implement source click handler
-                                  console.log('Source clicked:', source);
-                                }} 
+                                sources={message.sources || emptySourcesData} 
+                                onSourceClick={handleSourceClick} 
                               />
                             )}
 

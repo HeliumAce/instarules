@@ -278,6 +278,46 @@ function calculateContextCompleteness(question: string, sections: VectorSearchRe
   return (termCoverageScore * 0.7) + (similarityScore * 0.3);
 }
 
+// Convert vector search results to MessageSources format
+function convertToMessageSources(results: VectorSearchResult[]): MessageSources {
+  if (!results || results.length === 0) {
+    return { count: 0, sources: [] };
+  }
+  
+  const sources = results.map((result): Source => {
+    // Extract metadata from the result
+    const metadata = result.metadata || {};
+    
+    // Check if it's a rule or card based on metadata
+    if (metadata.card_id || metadata.card_name) {
+      // It's a card source
+      return {
+        id: result.id,
+        contentType: 'card',
+        title: metadata.card_name || 'Card',
+        cardId: metadata.card_id || '',
+        cardName: metadata.card_name || 'Unknown Card'
+      } as CardSource;
+    } else {
+      // Default to rule source
+      return {
+        id: result.id,
+        contentType: 'rule',
+        title: metadata.title || 'Rule',
+        bookName: metadata.book_name || metadata.source || 'Rulebook',
+        headings: metadata.heading_path || [],
+        sourceHeading: metadata.heading || metadata.section || 'Rules',
+        pageNumber: metadata.page ? parseInt(metadata.page) : undefined
+      } as RuleSource;
+    }
+  });
+  
+  return {
+    count: sources.length,
+    sources
+  };
+}
+
 export function useGameRules(gameId: string): UseGameRulesReturn {
   // Get Supabase client via hook - this is safe here
   const { supabase } = useSupabase(); 
@@ -432,7 +472,12 @@ export function useGameRules(gameId: string): UseGameRulesReturn {
         // Use combined results to build prompt, now including chat history
         const prompt = buildPrompt(gameName, question, finalResults, chatHistory);
         const response = await getLLMCompletion({ prompt }); 
-        return response;
+        
+        // Create a response object with sources metadata
+        const sourcesData = convertToMessageSources(finalResults);
+        const enhancedResponse = Object.assign(String(response), { sources: sourcesData });
+        
+        return enhancedResponse;
       } else {
         // Fallback if no results found
         return getFallbackResponse(question); 

@@ -59,6 +59,7 @@ export function useChatMessages(gameId: string) {
               isUser: msg.is_user,
               timestamp: new Date(msg.created_at),
               confidence,
+              sources: msg.sources as MessageSources | undefined
             };
           })
         );
@@ -100,6 +101,7 @@ export function useChatMessages(gameId: string) {
               isUser: newMessage.is_user,
               timestamp: new Date(newMessage.created_at),
               confidence,
+              sources: newMessage.sources as MessageSources | undefined
             },
           ]);
         }
@@ -140,6 +142,7 @@ export function useChatMessages(gameId: string) {
             user_id: user.id,
             content: dbContent, // Store original in database
             is_user: isUser,
+            sources: sources || null // Save sources to database
           },
         ])
         .select()
