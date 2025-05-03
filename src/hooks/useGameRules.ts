@@ -289,33 +289,231 @@ function convertToMessageSources(results: VectorSearchResult[]): MessageSources 
     const metadata = result.metadata || {};
     
     // Check if it's a rule or card based on metadata
-    if (metadata.card_id || metadata.card_name) {
+    if (metadata.card_id || metadata.card_name || (metadata.content_type === 'card')) {
+      // Extract card information from content if not in metadata
+      let cardName = metadata.card_name;
+      let cardId = metadata.card_id;
+      
+      if (!cardName || !cardId) {
+        // Try to extract from content
+        const content = result.content || '';
+        
+        // Look for card name pattern
+        if (!cardName) {
+          // First line might contain the card name
+          const firstLine = content.split('\n')[0];
+          if (firstLine && firstLine.length < 50) {
+            cardName = firstLine.replace(/\(ID:.*?\)/i, '').trim();
+          }
+        }
+        
+        // Look for card ID pattern
+        if (!cardId) {
+          const idMatch = content.match(/\(ID:\s*([\w\-]+)\)/i) || 
+                          content.match(/ID:\s*([\w\-]+)/i) ||
+                          content.match(/(ARCS-[\w\-]+)/i);
+          if (idMatch && idMatch[1]) {
+            cardId = idMatch[1].trim();
+          }
+        }
+      }
+      
       // It's a card source
       return {
         id: result.id,
         contentType: 'card',
-        title: metadata.card_name || 'Card',
-        cardId: metadata.card_id || '',
-        cardName: metadata.card_name || 'Unknown Card'
+        title: cardName || 'Card',
+        cardId: cardId || '',
+        cardName: cardName || 'Card'
       } as CardSource;
     } else {
-      // Default to rule source
+      // Extract more descriptive info for rules
+      const content = result.content || '';
+      
+      // Try to extract page number
+      let pageNumber = metadata.page ? parseInt(metadata.page) : undefined;
+      if (!pageNumber) {
+        const pageMatch = content.match(/\(Page (\d+)\)/i);
+        if (pageMatch && pageMatch[1]) {
+          pageNumber = parseInt(pageMatch[1]);
+        }
+      }
+      
+      // Try to extract a meaningful section heading
+      let sourceHeading = metadata.heading || metadata.section || '';
+      if (!sourceHeading || sourceHeading === 'Rules') {
+        // Try to find section title in content
+        const lines = content.split('\n');
+        const titleLine = lines.find(line => 
+          /^[A-Z].*[A-Z]/.test(line) || // Contains uppercase letters
+          line.includes(':') || // Contains a colon
+          line.length < 40 // Short line that might be a title
+        );
+        
+        if (titleLine) {
+          sourceHeading = titleLine
+            .replace(/\(Page \d+\)/i, '')
+            .replace(/^\s*-\s*/, '')
+            .trim();
+        }
+      }
+      
+      // Get book/source name
+      let bookName = metadata.book_name || metadata.source || 'Rulebook';
+      
+      // Default to rule source with improved details
       return {
         id: result.id,
         contentType: 'rule',
-        title: metadata.title || 'Rule',
-        bookName: metadata.book_name || metadata.source || 'Rulebook',
+        title: metadata.title || sourceHeading || 'Rule',
+        bookName: bookName,
         headings: metadata.heading_path || [],
-        sourceHeading: metadata.heading || metadata.section || 'Rules',
-        pageNumber: metadata.page ? parseInt(metadata.page) : undefined
+        sourceHeading: sourceHeading || 'General Rules',
+        pageNumber: pageNumber
       } as RuleSource;
     }
   });
   
+  // Deduplicate sources
+  const deduplicatedSources = deduplicateSources(sources);
+  
   return {
-    count: sources.length,
-    sources
+    count: deduplicatedSources.length,
+    sources: deduplicatedSources
   };
+}
+
+// Helper function to deduplicate and organize sources
+function deduplicateSources(sources: Source[]): Source[] {
+  if (!sources || sources.length <= 1) {
+    return sources;
+  }
+  
+  // Step 1: Deduplicate with quality checks
+  const uniqueRuleSources = new Map<string, RuleSource>();
+  const uniqueCardSources = new Map<string, CardSource>();
+  const otherSources: Source[] = [];
+  
+  // Process each source
+  sources.forEach(source => {
+    if (source.contentType === 'rule') {
+      const ruleSource = source as RuleSource;
+      
+      // Create a unique key for this rule source
+      const key = `${ruleSource.sourceHeading}-${ruleSource.pageNumber || 'unknown'}-${ruleSource.bookName}`;
+      
+      // Check if this is a higher quality source than what we already have
+      if (!uniqueRuleSources.has(key) || isHigherQualitySource(ruleSource, uniqueRuleSources.get(key)!)) {
+        uniqueRuleSources.set(key, ruleSource);
+      }
+    } else if (source.contentType === 'card') {
+      const cardSource = source as CardSource;
+      
+      // Create a unique key for this card source
+      const key = cardSource.cardId ? `${cardSource.cardName}-${cardSource.cardId}` : cardSource.cardName;
+      
+      // Check if this is a higher quality source than what we already have
+      if (!uniqueCardSources.has(key) || isHigherQualityCardSource(cardSource, uniqueCardSources.get(key)!)) {
+        uniqueCardSources.set(key, cardSource);
+      }
+    } else {
+      // For any other type of source, just add it
+      otherSources.push(source);
+    }
+  });
+  
+  // Step 2: Group similar rule sources (e.g., same section but different pages)
+  // This helps consolidate redundant entries like "THE BLIGHT" appearing multiple times
+  const groupedRuleSources = new Map<string, RuleSource[]>();
+  
+  uniqueRuleSources.forEach((source) => {
+    // Group by heading name (ignoring page numbers and small variations)
+    const normalizedHeading = source.sourceHeading.toUpperCase().trim();
+    
+    if (!groupedRuleSources.has(normalizedHeading)) {
+      groupedRuleSources.set(normalizedHeading, []);
+    }
+    
+    groupedRuleSources.get(normalizedHeading)!.push(source);
+  });
+  
+  // Keep only the best source from each group
+  const bestRuleSources: RuleSource[] = [];
+  
+  groupedRuleSources.forEach((sourceGroup) => {
+    if (sourceGroup.length === 1) {
+      // Only one source in this group, add it directly
+      bestRuleSources.push(sourceGroup[0]);
+    } else {
+      // Multiple sources with the same heading, pick the best one
+      const bestSource = sourceGroup.reduce((best, current) => {
+        return (isHigherQualitySource(current, best)) ? current : best;
+      }, sourceGroup[0]);
+      
+      bestRuleSources.push(bestSource);
+    }
+  });
+  
+  // Step 3: Sort sources
+  // Sort rule sources by page number and heading
+  bestRuleSources.sort((a, b) => {
+    // First sort by page number if available
+    if (a.pageNumber && b.pageNumber) {
+      return a.pageNumber - b.pageNumber;
+    }
+    
+    // If one has page number and other doesn't, prioritize the one with page number
+    if (a.pageNumber && !b.pageNumber) return -1;
+    if (!a.pageNumber && b.pageNumber) return 1;
+    
+    // Otherwise sort by heading
+    return a.sourceHeading.localeCompare(b.sourceHeading);
+  });
+  
+  // Sort card sources alphabetically by name
+  const sortedCardSources = Array.from(uniqueCardSources.values())
+    .sort((a, b) => a.cardName.localeCompare(b.cardName));
+  
+  // Step 4: Combine all sources - rules first, then cards, then others
+  return [...bestRuleSources, ...sortedCardSources, ...otherSources];
+}
+
+// Helper to determine if a source has higher quality information
+function isHigherQualitySource(newSource: RuleSource, existingSource: RuleSource): boolean {
+  // If the new source has a page number and the existing one doesn't, prefer the new one
+  if (newSource.pageNumber && !existingSource.pageNumber) {
+    return true;
+  }
+  
+  // If the new source has a more specific heading, prefer it
+  if (newSource.sourceHeading && newSource.sourceHeading !== 'General Rules' && 
+      existingSource.sourceHeading === 'General Rules') {
+    return true;
+  }
+  
+  // If the new source has a more detailed title, prefer it
+  if (newSource.title && newSource.title.length > 5 && 
+      (!existingSource.title || existingSource.title.length <= 5)) {
+    return true;
+  }
+  
+  return false;
+}
+
+// Helper to determine if a card source has higher quality information
+function isHigherQualityCardSource(newSource: CardSource, existingSource: CardSource): boolean {
+  // If the new source has an ID and the existing one doesn't, prefer the new one
+  if (newSource.cardId && !existingSource.cardId) {
+    return true;
+  }
+  
+  // If the new source has a longer (more detailed) name, prefer it
+  if (newSource.cardName && existingSource.cardName && 
+      newSource.cardName.length > existingSource.cardName.length) {
+    return true;
+  }
+  
+  return false;
 }
 
 export function useGameRules(gameId: string): UseGameRulesReturn {

@@ -42,10 +42,14 @@ const SourcesList = ({ sources, onSourceClick }: SourcesListProps) => {
               <li key={source.id}>
                 <button
                   onClick={() => onSourceClick?.(source)}
-                  className="text-left w-full hover:text-foreground text-muted-foreground transition-colors"
+                  className="text-left w-full hover:text-foreground text-muted-foreground transition-colors line-clamp-2"
+                  title={`${source.bookName} - ${source.sourceHeading}${source.pageNumber ? ` (p.${source.pageNumber})` : ''}`}
                 >
-                  {source.bookName} - {source.sourceHeading}
-                  {source.pageNumber && <span className="ml-1 text-xs">p.{source.pageNumber}</span>}
+                  <div className="font-semibold">{source.sourceHeading}</div>
+                  <div className="text-xs opacity-75 flex items-center">
+                    {source.bookName}
+                    {source.pageNumber && <span className="ml-1">p.{source.pageNumber}</span>}
+                  </div>
                 </button>
               </li>
             ))}
@@ -61,10 +65,13 @@ const SourcesList = ({ sources, onSourceClick }: SourcesListProps) => {
               <li key={source.id}>
                 <button
                   onClick={() => onSourceClick?.(source)}
-                  className="text-left w-full hover:text-foreground text-muted-foreground transition-colors"
+                  className="text-left w-full hover:text-foreground text-muted-foreground transition-colors line-clamp-2"
+                  title={`${source.cardName} (${source.cardId})`}
                 >
-                  {source.cardName}
-                  <span className="ml-1 text-xs opacity-60">{source.cardId}</span>
+                  <div className="font-semibold">{source.cardName}</div>
+                  {source.cardId && (
+                    <div className="text-xs opacity-75">ID: {source.cardId}</div>
+                  )}
                 </button>
               </li>
             ))}
@@ -106,7 +113,7 @@ const SourcesToggle = ({ sources, onSourceClick }: SourcesToggleProps) => {
           id="sources-list"
           className={cn(
             "absolute left-0 bottom-full mb-2",
-            "w-64 bg-muted rounded-lg p-3 shadow-lg"
+            "w-80 bg-muted rounded-lg p-3 shadow-lg"
           )}
         >
           {sources.count === 0 ? (
