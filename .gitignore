@@ -27,7 +27,4 @@ dist-ssr
 .env
 
 # Project files
-project-model.md
-project-tech.md
-project-prd.md
-project-feature-telemetry.md
+project-docs

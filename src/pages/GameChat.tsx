@@ -1,17 +1,111 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useParams, Navigate } from 'react-router-dom';
-import { SendHorizontal, Loader2, Trash2, ThumbsUp, ThumbsDown, Pencil } from 'lucide-react';
+import { SendHorizontal, Loader2, Trash2, ThumbsUp, ThumbsDown, Pencil, ChevronDown, ChevronUp } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { useGameContext } from '@/context/GameContext';
-import { Message } from '@/types/game';
+import { Message, Source, MessageSources, RuleSource, CardSource } from '@/types/game';
 import { useGameRules } from '@/hooks/useGameRules';
 import { useChatMessages } from '@/hooks/useChatMessages';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { ReloadIcon } from '@radix-ui/react-icons';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from "@/components/ui/use-toast";
+import { cn } from '@/lib/utils';
+
+// Internal Sources components
+interface SourcesListProps {
+  sources: Source[];
+  onSourceClick?: (source: Source) => void;
+}
+
+const SourcesList = ({ sources, onSourceClick }: SourcesListProps) => {
+  // Group sources by type
+  const rulesSources = sources.filter((s): s is RuleSource => s.contentType === 'rule');
+  const cardSources = sources.filter((s): s is CardSource => s.contentType === 'card');
+
+  return (
+    <div className="mt-2 space-y-2 text-sm">
+      {rulesSources.length > 0 && (
+        <div>
+          <h4 className="font-medium text-muted-foreground mb-1">Rules</h4>
+          <ul className="space-y-1">
+            {rulesSources.map((source) => (
+              <li key={source.id}>
+                <button
+                  onClick={() => onSourceClick?.(source)}
+                  className="text-left w-full hover:text-foreground text-muted-foreground transition-colors"
+                >
+                  {source.bookName} - {source.sourceHeading}
+                  {source.pageNumber && <span className="ml-1 text-xs">p.{source.pageNumber}</span>}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {cardSources.length > 0 && (
+        <div>
+          <h4 className="font-medium text-muted-foreground mb-1">Cards</h4>
+          <ul className="space-y-1">
+            {cardSources.map((source) => (
+              <li key={source.id}>
+                <button
+                  onClick={() => onSourceClick?.(source)}
+                  className="text-left w-full hover:text-foreground text-muted-foreground transition-colors"
+                >
+                  {source.cardName}
+                  <span className="ml-1 text-xs opacity-60">{source.cardId}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
+};
+
+interface SourcesToggleProps {
+  sources: MessageSources;
+  onSourceClick?: (source: Source) => void;
+}
+
+const SourcesToggle = ({ sources, onSourceClick }: SourcesToggleProps) => {
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  return (
+    <div className="relative">
+      <button
+        onClick={() => setIsExpanded(!isExpanded)}
+        className="p-1.5 transition-colors active:scale-95 text-muted-foreground hover:text-foreground flex items-center gap-1"
+        aria-expanded={isExpanded}
+        aria-controls="sources-list"
+      >
+        <span>Sources ({sources.count})</span>
+        {isExpanded ? (
+          <ChevronUp size={14} className="opacity-60" />
+        ) : (
+          <ChevronDown size={14} className="opacity-60" />
+        )}
+      </button>
+
+      {isExpanded && (
+        <div
+          id="sources-list"
+          className={cn(
+            "absolute left-0 bottom-full mb-2",
+            "w-64 bg-muted rounded-lg p-3 shadow-lg"
+          )}
+        >
+          <SourcesList sources={sources.sources} onSourceClick={onSourceClick} />
+        </div>
+      )}
+    </div>
+  );
+};
 
 const GameChat = () => {
   const { gameId } = useParams<{ gameId: string }>();
@@ -43,7 +137,39 @@ const GameChat = () => {
   };
 
   const handleMutationSuccess = useCallback(async (response: string) => {
-    await saveMessage(response, false);
+    // TEMPORARY: Add mock sources for testing
+    const mockSources: MessageSources = {
+      count: 3,
+      sources: [
+        {
+          id: '1',
+          contentType: 'rule',
+          title: 'Core Rules',
+          bookName: 'Core Rulebook',
+          headings: ['Combat', 'Actions'],
+          sourceHeading: 'Blight Effects',
+          pageNumber: 42
+        },
+        {
+          id: '2',
+          contentType: 'rule',
+          title: 'FAQ',
+          bookName: 'FAQ Document',
+          headings: ['Common Questions'],
+          sourceHeading: 'Blight Crisis',
+          pageNumber: 15
+        },
+        {
+          id: '3',
+          contentType: 'card',
+          title: 'Blight Card',
+          cardId: 'BLT-001',
+          cardName: 'Blight'
+        }
+      ]
+    };
+
+    await saveMessage(response, false, mockSources);
   }, [saveMessage]);
 
   const handleMutationError = useCallback(async (error: Error) => {
@@ -187,39 +313,52 @@ const GameChat = () => {
                           
                           {/* Feedback icons and confidence score for non-user messages */}
                           <div className="flex items-center justify-end pt-1 mt-1 border-t border-muted/20 transition-opacity">
-                            <div className="flex -space-x-px">
-                              <button 
-                                className="p-1.5 transition-colors active:scale-95"
-                                title="Helpful"
-                                onClick={() => handleFeedback(message.id, 'thumbsUp')}
-                                aria-pressed={messageFeedback[message.id] === 'thumbsUp'}
-                              >
-                                <ThumbsUp size={16} className="text-muted-foreground transition-colors hover:text-foreground" />
-                              </button>
-                              <button 
-                                className="p-1.5 transition-colors active:scale-95"
-                                title="Not helpful"
-                                onClick={() => handleFeedback(message.id, 'thumbsDown')}
-                                aria-pressed={messageFeedback[message.id] === 'thumbsDown'}
-                              >
-                                <ThumbsDown size={16} className="text-muted-foreground transition-colors hover:text-foreground" />
-                              </button>
-                              <div className="w-px h-full bg-muted/20"></div>
-                              <button 
-                                className="p-1.5 transition-colors active:scale-95"
-                                title="Edit this question"
-                                onClick={() => console.log('Edit clicked')}
-                              >
-                                <Pencil size={16} className="text-muted-foreground transition-colors hover:text-foreground" />
-                              </button>
+                            <div className="flex items-center justify-between w-full">
+                              {/* Sources - only show for AI messages with sources */}
+                              {!message.isUser && message.sources && (
+                                <SourcesToggle 
+                                  sources={message.sources} 
+                                  onSourceClick={(source) => {
+                                    // TODO: Implement source click handler
+                                    console.log('Source clicked:', source);
+                                  }} 
+                                />
+                              )}
+                              
+                              <div className="flex -space-x-px">
+                                <button 
+                                  className="p-1.5 transition-colors active:scale-95"
+                                  title="Helpful"
+                                  onClick={() => handleFeedback(message.id, 'thumbsUp')}
+                                  aria-pressed={messageFeedback[message.id] === 'thumbsUp'}
+                                >
+                                  <ThumbsUp size={16} className="text-muted-foreground transition-colors hover:text-foreground" />
+                                </button>
+                                <button 
+                                  className="p-1.5 transition-colors active:scale-95"
+                                  title="Not helpful"
+                                  onClick={() => handleFeedback(message.id, 'thumbsDown')}
+                                  aria-pressed={messageFeedback[message.id] === 'thumbsDown'}
+                                >
+                                  <ThumbsDown size={16} className="text-muted-foreground transition-colors hover:text-foreground" />
+                                </button>
+                                <div className="w-px h-full bg-muted/20"></div>
+                                <button 
+                                  className="p-1.5 transition-colors active:scale-95"
+                                  title="Edit this question"
+                                  onClick={() => console.log('Edit clicked')}
+                                >
+                                  <Pencil size={16} className="text-muted-foreground transition-colors hover:text-foreground" />
+                                </button>
+                              </div>
+                              
+                              {/* Confidence score indicator */}
+                              {message.confidence && (
+                                <span className="text-xs text-muted-foreground ml-2">
+                                  {message.confidence} confidence
+                                </span>
+                              )}
                             </div>
-                            
-                            {/* Confidence score indicator */}
-                            {message.confidence && (
-                              <span className="text-xs text-muted-foreground ml-2">
-                                {message.confidence} confidence
-                              </span>
-                            )}
                           </div>
                         </>
                       )}
