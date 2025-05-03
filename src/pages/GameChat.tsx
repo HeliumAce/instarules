@@ -13,6 +13,7 @@ import { ReloadIcon } from '@radix-ui/react-icons';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from "@/components/ui/use-toast";
 import { cn } from '@/lib/utils';
+import { Badge } from '@/components/ui/badge';
 
 // Internal Sources components
 interface SourcesListProps {
@@ -80,16 +81,18 @@ const SourcesToggle = ({ sources, onSourceClick }: SourcesToggleProps) => {
     <div className="relative">
       <button
         onClick={() => setIsExpanded(!isExpanded)}
-        className="p-1.5 transition-colors active:scale-95 text-muted-foreground hover:text-foreground flex items-center gap-1"
+        className="text-muted-foreground hover:text-foreground flex items-center gap-1.5 text-sm"
         aria-expanded={isExpanded}
         aria-controls="sources-list"
+        title={sources.count === 0 ? "No sources could be found. Please try another question." : undefined}
       >
-        <span>Sources ({sources.count})</span>
-        {isExpanded ? (
-          <ChevronUp size={14} className="opacity-60" />
-        ) : (
-          <ChevronDown size={14} className="opacity-60" />
-        )}
+        <span>Sources</span>
+        <Badge 
+          variant="outline" 
+          className="font-medium bg-muted-foreground text-background hover:bg-muted-foreground border-0 py-0 px-2"
+        >
+          {sources.count}
+        </Badge>
       </button>
 
       {isExpanded && (
@@ -100,7 +103,11 @@ const SourcesToggle = ({ sources, onSourceClick }: SourcesToggleProps) => {
             "w-64 bg-muted rounded-lg p-3 shadow-lg"
           )}
         >
-          <SourcesList sources={sources.sources} onSourceClick={onSourceClick} />
+          {sources.count === 0 ? (
+            <p className="text-sm text-muted-foreground">No sources could be found. Please try another question.</p>
+          ) : (
+            <SourcesList sources={sources.sources} onSourceClick={onSourceClick} />
+          )}
         </div>
       )}
     </div>
@@ -312,19 +319,19 @@ const GameChat = () => {
                           </div>
                           
                           {/* Feedback icons and confidence score for non-user messages */}
-                          <div className="flex items-center justify-end pt-1 mt-1 border-t border-muted/20 transition-opacity">
-                            <div className="flex items-center justify-between w-full">
-                              {/* Sources - only show for AI messages with sources */}
-                              {!message.isUser && message.sources && (
-                                <SourcesToggle 
-                                  sources={message.sources} 
-                                  onSourceClick={(source) => {
-                                    // TODO: Implement source click handler
-                                    console.log('Source clicked:', source);
-                                  }} 
-                                />
-                              )}
-                              
+                          <div className="flex items-center justify-between pt-1 mt-1 border-t border-muted/20 transition-opacity">
+                            {/* Sources - show for all AI messages */}
+                            {!message.isUser && (
+                              <SourcesToggle 
+                                sources={message.sources || { count: 0, sources: [] }} 
+                                onSourceClick={(source) => {
+                                  // TODO: Implement source click handler
+                                  console.log('Source clicked:', source);
+                                }} 
+                              />
+                            )}
+
+                            <div className="flex items-center gap-2">
                               <div className="flex -space-x-px">
                                 <button 
                                   className="p-1.5 transition-colors active:scale-95"
@@ -354,7 +361,7 @@ const GameChat = () => {
                               
                               {/* Confidence score indicator */}
                               {message.confidence && (
-                                <span className="text-xs text-muted-foreground ml-2">
+                                <span className="text-sm text-muted-foreground">
                                   {message.confidence} confidence
                                 </span>
                               )}
