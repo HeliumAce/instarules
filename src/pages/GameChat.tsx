@@ -502,6 +502,15 @@ const GameChat = () => {
             <Textarea
               value={input}
               onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => {
+                // Submit form on Enter key press without Shift key
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  if (input.trim() && !isAsking && !isRulesLoading && !isRulesError && rulesQuery.data) {
+                    handleSubmit(e);
+                  }
+                }
+              }}
               placeholder={
                 isRulesLoading ? "Loading rules..." 
                 : isAsking ? "Processing your question..." 
