@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useSupabase } from '@/context/SupabaseContext';
 import { useAuth } from '@/context/AuthContext';
-import { Message } from '@/types/game';
+import { Message, MessageSources } from '@/types/game';
 
 export function useChatMessages(gameId: string) {
   const { supabase } = useSupabase();
@@ -59,6 +59,7 @@ export function useChatMessages(gameId: string) {
               isUser: msg.is_user,
               timestamp: new Date(msg.created_at),
               confidence,
+              sources: msg.sources as MessageSources | undefined
             };
           })
         );
@@ -100,6 +101,7 @@ export function useChatMessages(gameId: string) {
               isUser: newMessage.is_user,
               timestamp: new Date(newMessage.created_at),
               confidence,
+              sources: newMessage.sources as MessageSources | undefined
             },
           ]);
         }
@@ -115,7 +117,11 @@ export function useChatMessages(gameId: string) {
   }, [gameId, supabase, user]);
 
   // Save a new message
-  const saveMessage = async (content: string, isUser: boolean): Promise<Message> => {
+  const saveMessage = async (
+    content: string, 
+    isUser: boolean,
+    sources?: MessageSources
+  ): Promise<Message> => {
     if (!user) {
       throw new Error('You must be signed in to send messages');
     }
@@ -136,6 +142,7 @@ export function useChatMessages(gameId: string) {
             user_id: user.id,
             content: dbContent, // Store original in database
             is_user: isUser,
+            sources: sources || null // Save sources to database
           },
         ])
         .select()
@@ -145,10 +152,11 @@ export function useChatMessages(gameId: string) {
 
       const newMessage: Message = {
         id: data.id,
-        content: displayContent, // Modify for display
+        content: displayContent,
         isUser: data.is_user,
         timestamp: new Date(data.created_at),
         confidence,
+        sources
       };
 
       // Optimistically update the messages state

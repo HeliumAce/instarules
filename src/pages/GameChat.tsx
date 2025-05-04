@@ -1,17 +1,178 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useParams, Navigate } from 'react-router-dom';
-import { SendHorizontal, Loader2, Trash2, ThumbsUp, ThumbsDown, Pencil } from 'lucide-react';
+import { SendHorizontal, Loader2, Trash2, ThumbsUp, ThumbsDown, Pencil, ChevronDown, ChevronUp } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { useGameContext } from '@/context/GameContext';
-import { Message } from '@/types/game';
+import { Message, Source, MessageSources, RuleSource, CardSource } from '@/types/game';
 import { useGameRules } from '@/hooks/useGameRules';
 import { useChatMessages } from '@/hooks/useChatMessages';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { ReloadIcon } from '@radix-ui/react-icons';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from "@/components/ui/use-toast";
+import { cn } from '@/lib/utils';
+import { Badge } from '@/components/ui/badge';
+
+// Define empty sources data locally
+const emptySourcesData: MessageSources = {
+  count: 0,
+  sources: []
+};
+
+// Internal Sources components
+interface SourcesListProps {
+  sources: Source[];
+  onSourceClick?: (source: Source) => void;
+  closeTooltip?: () => void;
+}
+
+const SourcesList = ({ sources, onSourceClick, closeTooltip }: SourcesListProps) => {
+  // Group sources by type
+  const rulesSources = sources.filter((s): s is RuleSource => s.contentType === 'rule');
+  const cardSources = sources.filter((s): s is CardSource => s.contentType === 'card');
+
+  const handleClick = (source: Source) => {
+    // Call the onSourceClick handler
+    onSourceClick?.(source);
+    // Close the tooltip
+    closeTooltip?.();
+  };
+
+  return (
+    <div className="mt-2 space-y-2 text-sm">
+      {rulesSources.length > 0 && (
+        <div>
+          <h4 className="font-medium text-xs uppercase tracking-wider text-muted-foreground mb-1">Rules</h4>
+          <ul className="space-y-1">
+            {rulesSources.map((source) => (
+              <li key={source.id}>
+                <button
+                  onClick={() => handleClick(source)}
+                  className="text-left w-full hover:text-foreground text-muted-foreground transition-colors line-clamp-2"
+                  title={`${source.bookName} - ${source.sourceHeading}${source.pageNumber ? ` (p.${source.pageNumber})` : ''}`}
+                >
+                  <div className="font-semibold">{source.sourceHeading}</div>
+                  <div className="text-xs opacity-75 flex items-center">
+                    {source.bookName}
+                    {source.pageNumber && <span className="ml-1">p.{source.pageNumber}</span>}
+                  </div>
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {cardSources.length > 0 && (
+        <div>
+          <h4 className="font-medium text-xs uppercase tracking-wider text-muted-foreground mb-1">Cards</h4>
+          <ul className="space-y-1">
+            {cardSources.map((source) => (
+              <li key={source.id}>
+                <button
+                  onClick={() => handleClick(source)}
+                  className="text-left w-full hover:text-foreground text-muted-foreground transition-colors line-clamp-2"
+                  title={`${source.cardName} (${source.cardId})`}
+                >
+                  <div className="font-semibold">{source.cardName}</div>
+                  {source.cardId && (
+                    <div className="text-xs opacity-75">ID: {source.cardId}</div>
+                  )}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
+};
+
+interface SourcesToggleProps {
+  sources: MessageSources;
+  onSourceClick?: (source: Source) => void;
+}
+
+const SourcesToggle = ({ sources, onSourceClick }: SourcesToggleProps) => {
+  const [isExpanded, setIsExpanded] = useState(false);
+  const tooltipRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+
+  // Function to close the tooltip
+  const closeTooltip = () => {
+    setIsExpanded(false);
+  };
+
+  // Set up the click outside handler
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      // Close the tooltip if click is outside the tooltip and outside the toggle button
+      if (
+        isExpanded && 
+        tooltipRef.current && 
+        buttonRef.current && 
+        !tooltipRef.current.contains(event.target as Node) &&
+        !buttonRef.current.contains(event.target as Node)
+      ) {
+        closeTooltip();
+      }
+    };
+
+    // Add event listener when tooltip is expanded
+    if (isExpanded) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    // Clean up event listener
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isExpanded]);
+
+  return (
+    <div className="relative">
+      <button
+        ref={buttonRef}
+        onClick={() => setIsExpanded(!isExpanded)}
+        className="text-muted-foreground hover:text-foreground flex items-center gap-1.5 text-sm"
+        aria-expanded={isExpanded}
+        aria-controls="sources-list"
+        title={sources.count === 0 ? "No sources could be found. Please try another question." : undefined}
+      >
+        <span>Sources</span>
+        <Badge 
+          variant="outline" 
+          className="font-medium bg-muted-foreground text-background hover:bg-muted-foreground border-0 py-0 px-2"
+        >
+          {sources.count}
+        </Badge>
+      </button>
+
+      {isExpanded && (
+        <div
+          ref={tooltipRef}
+          id="sources-list"
+          className={cn(
+            "absolute left-0 bottom-full mb-2",
+            "w-80 bg-muted rounded-lg p-3 shadow-lg"
+          )}
+        >
+          {sources.count === 0 ? (
+            <p className="text-sm text-muted-foreground">No sources could be found. Please try another question.</p>
+          ) : (
+            <SourcesList 
+              sources={sources.sources} 
+              onSourceClick={onSourceClick}
+              closeTooltip={closeTooltip}
+            />
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
 
 const GameChat = () => {
   const { gameId } = useParams<{ gameId: string }>();
@@ -21,6 +182,7 @@ const GameChat = () => {
   const game = gameId ? getGameById(gameId) : undefined;
   const [input, setInput] = useState('');
   const [isClearing, setIsClearing] = useState(false);
+  const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { rulesQuery, askMutation, getFallbackResponse } = useGameRules(gameId || '');
   const { messages, loading: messagesLoading, error: messagesError, saveMessage, clearMessages } = useChatMessages(gameId || '');
@@ -38,13 +200,69 @@ const GameChat = () => {
     return <Navigate to="/auth" />;
   }
 
+  const handleSourceClick = async (source: Source) => {
+    console.log('Source clicked:', source);
+    
+    // Create formatted source reference as user message
+    let userMessage = '';
+    
+    if (source.contentType === 'rule') {
+      // Format: "Heading, Rulebook p.XX"
+      const ruleSource = source as RuleSource;
+      userMessage = `${ruleSource.sourceHeading}, Rulebook p.${ruleSource.pageNumber || '?'}`;
+    } else if (source.contentType === 'card') {
+      // Format: "Card Name, ID: XXX"
+      const cardSource = source as CardSource;
+      userMessage = `${cardSource.cardName}, ID: ${cardSource.cardId}`;
+    } else {
+      // Fallback
+      userMessage = `${source.title}`;
+    }
+    
+    // Save as user message
+    await saveMessage(userMessage, true);
+    
+    // Set typing indicator
+    setIsTyping(true);
+    
+    // Create chat history from existing messages
+    const chatHistory = messages.slice(-6).map(msg => ({
+      content: msg.content,
+      isUser: msg.isUser
+    }));
+    
+    // Trigger AI to respond to this source query
+    askMutation.mutate(
+      { 
+        question: userMessage,
+        chatHistory: chatHistory.length > 0 ? chatHistory : undefined 
+      },
+      {
+        onSuccess: handleMutationSuccess,
+        onError: handleMutationError,
+      }
+    );
+  };
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  const handleMutationSuccess = useCallback(async (response: string) => {
-    await saveMessage(response, false);
-  }, [saveMessage]);
+  const handleMutationSuccess = async (response: string) => {
+    setIsTyping(false);
+    
+    let sources: MessageSources | undefined = undefined;
+    
+    // Check if response has sources attached
+    if (typeof response === 'object' && (response as any).sources) {
+      sources = (response as any).sources as MessageSources;
+      // Use string representation of the response object
+      response = String(response);
+    }
+    
+    // Save the message with sources
+    await saveMessage(response, false, sources);
+  };
 
   const handleMutationError = useCallback(async (error: Error) => {
     console.error('Error in chat interaction:', error);
@@ -66,6 +284,7 @@ const GameChat = () => {
 
     await saveMessage(currentInput, true);
     setInput('');
+    setIsTyping(true);
 
     // Create chat history from existing messages
     // Only include the last few messages to keep context reasonable
@@ -115,6 +334,27 @@ const GameChat = () => {
   const isAsking = askMutation.isPending;
   const rulesErrorMessage = rulesQuery.error?.message;
   const askErrorMessage = askMutation.error?.message;
+
+  const renderMessageFooter = (message: Message) => {
+    // Always show sources for AI messages
+    if (!message.isUser) {
+      return (
+        <div className="flex justify-between items-center text-xs text-slate-500 mt-2">
+          {message.confidence && (
+            <div className="flex items-center gap-1">
+              <CircleIcon className="w-2 h-2" />
+              <span>{message.confidence} confidence</span>
+            </div>
+          )}
+          <SourcesToggle 
+            sources={message.sources || emptySourcesData} 
+            onSourceClick={handleSourceClick}
+          />
+        </div>
+      );
+    }
+    return null;
+  };
 
   return (
     <div className="flex h-screen flex-col">
@@ -186,40 +426,50 @@ const GameChat = () => {
                           </div>
                           
                           {/* Feedback icons and confidence score for non-user messages */}
-                          <div className="flex items-center justify-end pt-1 mt-1 border-t border-muted/20 transition-opacity">
-                            <div className="flex -space-x-px">
-                              <button 
-                                className="p-1.5 transition-colors active:scale-95"
-                                title="Helpful"
-                                onClick={() => handleFeedback(message.id, 'thumbsUp')}
-                                aria-pressed={messageFeedback[message.id] === 'thumbsUp'}
-                              >
-                                <ThumbsUp size={16} className="text-muted-foreground transition-colors hover:text-foreground" />
-                              </button>
-                              <button 
-                                className="p-1.5 transition-colors active:scale-95"
-                                title="Not helpful"
-                                onClick={() => handleFeedback(message.id, 'thumbsDown')}
-                                aria-pressed={messageFeedback[message.id] === 'thumbsDown'}
-                              >
-                                <ThumbsDown size={16} className="text-muted-foreground transition-colors hover:text-foreground" />
-                              </button>
-                              <div className="w-px h-full bg-muted/20"></div>
-                              <button 
-                                className="p-1.5 transition-colors active:scale-95"
-                                title="Edit this question"
-                                onClick={() => console.log('Edit clicked')}
-                              >
-                                <Pencil size={16} className="text-muted-foreground transition-colors hover:text-foreground" />
-                              </button>
-                            </div>
-                            
-                            {/* Confidence score indicator */}
-                            {message.confidence && (
-                              <span className="text-xs text-muted-foreground ml-2">
-                                {message.confidence} confidence
-                              </span>
+                          <div className="flex items-center justify-between pt-1 mt-1 border-t border-muted/20 transition-opacity">
+                            {/* Sources - show for all AI messages */}
+                            {!message.isUser && (
+                              <SourcesToggle 
+                                sources={message.sources || emptySourcesData} 
+                                onSourceClick={handleSourceClick} 
+                              />
                             )}
+
+                            <div className="flex items-center gap-2">
+                              <div className="flex -space-x-px">
+                                <button 
+                                  className="p-1.5 transition-colors active:scale-95"
+                                  title="Helpful"
+                                  onClick={() => handleFeedback(message.id, 'thumbsUp')}
+                                  aria-pressed={messageFeedback[message.id] === 'thumbsUp'}
+                                >
+                                  <ThumbsUp size={16} className="text-muted-foreground transition-colors hover:text-foreground" />
+                                </button>
+                                <button 
+                                  className="p-1.5 transition-colors active:scale-95"
+                                  title="Not helpful"
+                                  onClick={() => handleFeedback(message.id, 'thumbsDown')}
+                                  aria-pressed={messageFeedback[message.id] === 'thumbsDown'}
+                                >
+                                  <ThumbsDown size={16} className="text-muted-foreground transition-colors hover:text-foreground" />
+                                </button>
+                                <div className="w-px h-full bg-muted/20"></div>
+                                <button 
+                                  className="p-1.5 transition-colors active:scale-95"
+                                  title="Edit this question"
+                                  onClick={() => console.log('Edit clicked')}
+                                >
+                                  <Pencil size={16} className="text-muted-foreground transition-colors hover:text-foreground" />
+                                </button>
+                              </div>
+                              
+                              {/* Confidence score indicator */}
+                              {message.confidence && (
+                                <span className="text-sm text-muted-foreground">
+                                  {message.confidence} confidence
+                                </span>
+                              )}
+                            </div>
                           </div>
                         </>
                       )}
@@ -252,6 +502,15 @@ const GameChat = () => {
             <Textarea
               value={input}
               onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => {
+                // Submit form on Enter key press without Shift key
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  if (input.trim() && !isAsking && !isRulesLoading && !isRulesError && rulesQuery.data) {
+                    handleSubmit(e);
+                  }
+                }
+              }}
               placeholder={
                 isRulesLoading ? "Loading rules..." 
                 : isAsking ? "Processing your question..." 
