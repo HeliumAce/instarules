@@ -358,8 +358,16 @@ function convertToMessageSources(results: VectorSearchResult[]): MessageSources 
         }
       }
       
-      // Get book/source name
-      let bookName = metadata.book_name || metadata.source || 'Rulebook';
+      // Convert ALL CAPS headings to Title Case for better readability
+      if (sourceHeading === sourceHeading.toUpperCase() && sourceHeading.length > 2) {
+        sourceHeading = sourceHeading
+          .split(' ')
+          .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+          .join(' ');
+      }
+      
+      // Get book/source name - simplify to just use "Rulebook" for all rule sources
+      let bookName = "Rulebook";
       
       // Default to rule source with improved details
       return {
@@ -428,10 +436,21 @@ function deduplicateSources(sources: Source[]): Source[] {
   
   uniqueRuleSources.forEach((source) => {
     // Group by heading name (ignoring page numbers and small variations)
+    // Use case-insensitive comparison but preserve original casing for display
     const normalizedHeading = source.sourceHeading.toUpperCase().trim();
+    const originalHeading = source.sourceHeading.trim();
     
     if (!groupedRuleSources.has(normalizedHeading)) {
       groupedRuleSources.set(normalizedHeading, []);
+    }
+    
+    // Ensure we preserve the original casing
+    if (source.sourceHeading === source.sourceHeading.toUpperCase() && originalHeading.length > 2) {
+      // Convert all-caps headings to title case for better readability
+      source.sourceHeading = originalHeading
+        .split(' ')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+        .join(' ');
     }
     
     groupedRuleSources.get(normalizedHeading)!.push(source);

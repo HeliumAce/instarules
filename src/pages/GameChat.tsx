@@ -36,7 +36,7 @@ const SourcesList = ({ sources, onSourceClick }: SourcesListProps) => {
     <div className="mt-2 space-y-2 text-sm">
       {rulesSources.length > 0 && (
         <div>
-          <h4 className="font-medium text-muted-foreground mb-1">Rules</h4>
+          <h4 className="font-medium text-xs uppercase tracking-wider text-muted-foreground mb-1">Rules</h4>
           <ul className="space-y-1">
             {rulesSources.map((source) => (
               <li key={source.id}>
@@ -59,7 +59,7 @@ const SourcesList = ({ sources, onSourceClick }: SourcesListProps) => {
 
       {cardSources.length > 0 && (
         <div>
-          <h4 className="font-medium text-muted-foreground mb-1">Cards</h4>
+          <h4 className="font-medium text-xs uppercase tracking-wider text-muted-foreground mb-1">Cards</h4>
           <ul className="space-y-1">
             {cardSources.map((source) => (
               <li key={source.id}>
@@ -89,10 +89,39 @@ interface SourcesToggleProps {
 
 const SourcesToggle = ({ sources, onSourceClick }: SourcesToggleProps) => {
   const [isExpanded, setIsExpanded] = useState(false);
+  const tooltipRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+
+  // Set up the click outside handler
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      // Close the tooltip if click is outside the tooltip and outside the toggle button
+      if (
+        isExpanded && 
+        tooltipRef.current && 
+        buttonRef.current && 
+        !tooltipRef.current.contains(event.target as Node) &&
+        !buttonRef.current.contains(event.target as Node)
+      ) {
+        setIsExpanded(false);
+      }
+    };
+
+    // Add event listener when tooltip is expanded
+    if (isExpanded) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    // Clean up event listener
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isExpanded]);
 
   return (
     <div className="relative">
       <button
+        ref={buttonRef}
         onClick={() => setIsExpanded(!isExpanded)}
         className="text-muted-foreground hover:text-foreground flex items-center gap-1.5 text-sm"
         aria-expanded={isExpanded}
@@ -110,6 +139,7 @@ const SourcesToggle = ({ sources, onSourceClick }: SourcesToggleProps) => {
 
       {isExpanded && (
         <div
+          ref={tooltipRef}
           id="sources-list"
           className={cn(
             "absolute left-0 bottom-full mb-2",
