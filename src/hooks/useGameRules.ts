@@ -1,7 +1,8 @@
 import { useQuery, useMutation, UseQueryResult, UseMutationResult } from '@tanstack/react-query';
 import { getLLMCompletion } from '@/services/LLMService';
 import { fetchGameRules, fetchRelevantSectionsFromVectorDb, findRelevantSections } from '@/services/RulesService';
-import { preprocessQuery, classifyQuery } from '@/services/QueryPreprocessorService';
+import { preprocessQuery, classifyQuery, detectFollowUp, expandQueryByType } from '@/services/QueryPreprocessorService';
+import { extractEntitiesFromHistory, rankEntitiesByRelevance } from '@/services/EntityExtractionService';
 import { gameResponses } from '@/data/games';
 import { useSupabase } from '@/context/SupabaseContext';
 
@@ -25,6 +26,7 @@ interface VectorSearchResult {
 interface AskQuestionVariables {
   question: string;
   chatHistory?: { content: string; isUser: boolean }[];
+  skipFollowUpHandling?: boolean;
 }
 
 // Define the structure for the returned value of the hook
@@ -557,7 +559,7 @@ export function useGameRules(gameId: string): UseGameRulesReturn {
 
   // Mutation to ask question using hybrid search for context
   const askMutation = useMutation<string, Error, AskQuestionVariables>({
-    mutationFn: async ({ question, chatHistory }: AskQuestionVariables) => {
+    mutationFn: async ({ question, chatHistory, skipFollowUpHandling }: AskQuestionVariables) => {
       // Ensure game name is available
       const gameName = rulesQuery.data?.game;
       if (!gameName) {
@@ -571,9 +573,13 @@ export function useGameRules(gameId: string): UseGameRulesReturn {
         (isEnumerationQuestion || question.toLowerCase().match(/how many|different|types of|all|count/i) !== null) && 
         question.toLowerCase().match(/cards?|types?/i) !== null;
       
-      // Preprocess the query
-      const expandedQueries = preprocessQuery(question);
-      console.log(`[Hybrid Search] Using ${expandedQueries.length} query variations`);
+      // Preprocess the query with chat history for follow-up detection
+      // Skip follow-up handling if skipFollowUpHandling is true
+      const expandedQueries = skipFollowUpHandling
+        ? expandQueryByType(question, queryTypes) // Use standard query expansion without follow-up handling
+        : preprocessQuery(question, chatHistory);
+        
+      console.log(`[Hybrid Search] Using ${expandedQueries.length} query variations ${skipFollowUpHandling ? 'without' : 'including'} follow-up handling`);
       
       // Step 1: Perform vector search with all query variations
       console.log(`[Hybrid Search] Starting vector searches`);
@@ -685,9 +691,67 @@ export function useGameRules(gameId: string): UseGameRulesReturn {
         console.log(`Content preview: ${result.content.substring(0, 100).replace(/\n/g, ' ')}...`);
       });
 
+      // Follow-up recovery mechanism:
+      // If we have poor results (few or low similarity) and detected a likely follow-up question,
+      // try searching using the most recent entities from the conversation as context
+      if (!skipFollowUpHandling &&
+          (finalResults.length < 2 || finalResults.every(result => result.similarity < 0.45)) && 
+          chatHistory && chatHistory.length >= 2 && 
+          detectFollowUp(question)) {
+          
+        console.log('[Follow-up Recovery] Detected potential follow-up with poor results, attempting recovery');
+        
+        // Get entities from recent conversation history
+        const entities = extractEntitiesFromHistory(chatHistory);
+        
+        if (entities.length > 0) {
+          // Sort entities by recency and salience
+          const sortedEntities = rankEntitiesByRelevance(entities, question);
+          
+          // Take the top 2 entities and use them for recovery search
+          const recoveryTerms = sortedEntities.slice(0, 2).map(e => e.text);
+          
+          console.log(`[Follow-up Recovery] Using terms: ${recoveryTerms.join(', ')}`);
+          
+          // Run a recovery search with these terms and the original question
+          const recoveryQueries = recoveryTerms.map(term => 
+            `${question} ${term}`
+          );
+          
+          // Perform recovery searches
+          const recoveryResults: VectorSearchResult[] = [];
+          for (const recoveryQuery of recoveryQueries) {
+            console.log(`[Follow-up Recovery] Trying recovery query: "${recoveryQuery}"`);
+            const results = await fetchRelevantSectionsFromVectorDb(supabase, recoveryQuery);
+            recoveryResults.push(...results);
+          }
+          
+          // Add recovery results to final results if they're better
+          if (recoveryResults.length > 0) {
+            const uniqueRecoveryResults = recoveryResults.filter(
+              recovery => !finalResults.some(final => final.id === recovery.id)
+            );
+            
+            // If we have new good results, add them
+            const goodRecoveryResults = uniqueRecoveryResults
+              .filter(result => result.similarity > 0.5)
+              .sort((a, b) => b.similarity - a.similarity)
+              .slice(0, 3);
+            
+            if (goodRecoveryResults.length > 0) {
+              console.log(`[Follow-up Recovery] Found ${goodRecoveryResults.length} additional relevant sections`);
+              finalResults.push(...goodRecoveryResults);
+              
+              // Re-sort by similarity
+              finalResults.sort((a, b) => b.similarity - a.similarity);
+            }
+          }
+        }
+      }
+
       if (finalResults.length > 0) {
-        // Use combined results to build prompt, now including chat history
-        const prompt = buildPrompt(gameName, question, finalResults, chatHistory);
+        // Use combined results to build prompt, only include chat history if not skipping follow-up handling
+        const prompt = buildPrompt(gameName, question, finalResults, skipFollowUpHandling ? undefined : chatHistory);
         const response = await getLLMCompletion({ prompt }); 
         
         // Create a response object with sources metadata
