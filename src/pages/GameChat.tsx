@@ -25,12 +25,20 @@ const emptySourcesData: MessageSources = {
 interface SourcesListProps {
   sources: Source[];
   onSourceClick?: (source: Source) => void;
+  closeTooltip?: () => void;
 }
 
-const SourcesList = ({ sources, onSourceClick }: SourcesListProps) => {
+const SourcesList = ({ sources, onSourceClick, closeTooltip }: SourcesListProps) => {
   // Group sources by type
   const rulesSources = sources.filter((s): s is RuleSource => s.contentType === 'rule');
   const cardSources = sources.filter((s): s is CardSource => s.contentType === 'card');
+
+  const handleClick = (source: Source) => {
+    // Call the onSourceClick handler
+    onSourceClick?.(source);
+    // Close the tooltip
+    closeTooltip?.();
+  };
 
   return (
     <div className="mt-2 space-y-2 text-sm">
@@ -41,7 +49,7 @@ const SourcesList = ({ sources, onSourceClick }: SourcesListProps) => {
             {rulesSources.map((source) => (
               <li key={source.id}>
                 <button
-                  onClick={() => onSourceClick?.(source)}
+                  onClick={() => handleClick(source)}
                   className="text-left w-full hover:text-foreground text-muted-foreground transition-colors line-clamp-2"
                   title={`${source.bookName} - ${source.sourceHeading}${source.pageNumber ? ` (p.${source.pageNumber})` : ''}`}
                 >
@@ -64,7 +72,7 @@ const SourcesList = ({ sources, onSourceClick }: SourcesListProps) => {
             {cardSources.map((source) => (
               <li key={source.id}>
                 <button
-                  onClick={() => onSourceClick?.(source)}
+                  onClick={() => handleClick(source)}
                   className="text-left w-full hover:text-foreground text-muted-foreground transition-colors line-clamp-2"
                   title={`${source.cardName} (${source.cardId})`}
                 >
@@ -92,6 +100,11 @@ const SourcesToggle = ({ sources, onSourceClick }: SourcesToggleProps) => {
   const tooltipRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
 
+  // Function to close the tooltip
+  const closeTooltip = () => {
+    setIsExpanded(false);
+  };
+
   // Set up the click outside handler
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -103,7 +116,7 @@ const SourcesToggle = ({ sources, onSourceClick }: SourcesToggleProps) => {
         !tooltipRef.current.contains(event.target as Node) &&
         !buttonRef.current.contains(event.target as Node)
       ) {
-        setIsExpanded(false);
+        closeTooltip();
       }
     };
 
@@ -149,7 +162,11 @@ const SourcesToggle = ({ sources, onSourceClick }: SourcesToggleProps) => {
           {sources.count === 0 ? (
             <p className="text-sm text-muted-foreground">No sources could be found. Please try another question.</p>
           ) : (
-            <SourcesList sources={sources.sources} onSourceClick={onSourceClick} />
+            <SourcesList 
+              sources={sources.sources} 
+              onSourceClick={onSourceClick}
+              closeTooltip={closeTooltip}
+            />
           )}
         </div>
       )}
@@ -183,9 +200,48 @@ const GameChat = () => {
     return <Navigate to="/auth" />;
   }
 
-  const handleSourceClick = (source: Source) => {
+  const handleSourceClick = async (source: Source) => {
     console.log('Source clicked:', source);
-    // TODO: Implement source click functionality (e.g., show source details)
+    
+    // Create formatted source reference as user message
+    let userMessage = '';
+    
+    if (source.contentType === 'rule') {
+      // Format: "Heading, Rulebook p.XX"
+      const ruleSource = source as RuleSource;
+      userMessage = `${ruleSource.sourceHeading}, Rulebook p.${ruleSource.pageNumber || '?'}`;
+    } else if (source.contentType === 'card') {
+      // Format: "Card Name, ID: XXX"
+      const cardSource = source as CardSource;
+      userMessage = `${cardSource.cardName}, ID: ${cardSource.cardId}`;
+    } else {
+      // Fallback
+      userMessage = `${source.title}`;
+    }
+    
+    // Save as user message
+    await saveMessage(userMessage, true);
+    
+    // Set typing indicator
+    setIsTyping(true);
+    
+    // Create chat history from existing messages
+    const chatHistory = messages.slice(-6).map(msg => ({
+      content: msg.content,
+      isUser: msg.isUser
+    }));
+    
+    // Trigger AI to respond to this source query
+    askMutation.mutate(
+      { 
+        question: userMessage,
+        chatHistory: chatHistory.length > 0 ? chatHistory : undefined 
+      },
+      {
+        onSuccess: handleMutationSuccess,
+        onError: handleMutationError,
+      }
+    );
   };
 
   const scrollToBottom = () => {
