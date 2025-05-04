@@ -5,6 +5,8 @@
  * and adding relevant context based on query classification.
  */
 
+import { Entity, extractEntitiesFromHistory, rankEntitiesByRelevance } from './EntityExtractionService';
+
 // Query types for classification
 export type QueryType = 
   | 'RESOURCE_QUESTION'
@@ -256,19 +258,128 @@ export function expandQueryByType(query: string, types: QueryType[]): string[] {
 }
 
 /**
- * Main preprocessing function that transforms a query for better search results
+ * Detect if a query is likely a follow-up question
  */
-export function preprocessQuery(query: string): string[] {
-  // 1. Classify the query
+export function detectFollowUp(query: string): boolean {
+  const lowerQuery = query.toLowerCase();
+  
+  // Linguistic patterns that suggest follow-ups
+  const followUpPatterns = [
+    /^(?:and|so|but)\s+/i,                      // Starting with conjunctions
+    /\b(?:they|them|these|those|it|this)\b/i,   // Pronouns without clear referents
+    /^(?:when|where|how|why|what)\s+(?:are|is|do|does|can|could)\s+(?:they|them|it|this)\b/i, // WH + be/do + pronoun
+    /^(?:who|what)\s+(?:are|is)\s+/i,           // Who/what are/is 
+    /\bused\s+for\b/i,                          // Purpose questions
+    /^tell\s+me\s+more\b/i,                     // Explicit follow-up requests
+    /\bexamples?\b/i,                           // Asking for examples
+    /^great\b/i,                                // Common acknowledgment starter
+    /^thanks\b/i,                               // Thanks, followed by question
+    /^(?:ok|okay)\b/i                           // Acknowledgment
+  ];
+  
+  return followUpPatterns.some(pattern => pattern.test(lowerQuery));
+}
+
+/**
+ * Reformulate follow-up queries by replacing pronouns with entities
+ */
+export function reformulateFollowUp(
+  query: string, 
+  entities: Entity[],
+  previousQuestion?: string
+): string {
+  if (entities.length === 0) return query;
+  
+  // Get the highest-ranked entities - these are most likely the subjects of the follow-up
+  const sortedEntities = rankEntitiesByRelevance(entities, query);
+  
+  // Get the most relevant entity
+  const primaryEntity = sortedEntities[0];
+  
+  // Common pronouns to replace
+  const pronounPatterns = [
+    { pattern: /\b(?:they|them|these|those)\b/i, replacement: `${primaryEntity.text}` },
+    { pattern: /\b(?:it|this)\b/i, replacement: `${primaryEntity.text}` }
+  ];
+  
+  let reformulated = query;
+  
+  // Try to replace pronouns
+  for (const { pattern, replacement } of pronounPatterns) {
+    if (pattern.test(reformulated)) {
+      reformulated = reformulated.replace(pattern, replacement);
+      break; // Only replace one pronoun to avoid over-substitution
+    }
+  }
+  
+  // If no pronouns were found but it's still a follow-up,
+  // add contextual information from the previous question
+  if (reformulated === query && previousQuestion) {
+    // Extract what the previous question was about
+    const subjectMatches = 
+      previousQuestion.toLowerCase().match(/what (?:are|is) (?:the|a|an)? (.+?)(?:\?|$)/i) ||
+      previousQuestion.toLowerCase().match(/how (?:do|does) (.+?) work/i);
+    
+    if (subjectMatches && subjectMatches[1]) {
+      const subject = subjectMatches[1].trim();
+      // Add the subject for context
+      reformulated = `${reformulated} regarding ${subject}`;
+    } else if (primaryEntity) {
+      // Fall back to using the primary entity
+      reformulated = `${reformulated} about ${primaryEntity.text}`;
+    }
+  }
+  
+  return reformulated;
+}
+
+/**
+ * Enhanced preprocessQuery that handles follow-ups
+ * Updated to accept chat history for context
+ */
+export function preprocessQuery(
+  query: string, 
+  chatHistory?: { content: string; isUser: boolean }[]
+): string[] {
+  // Use existing classification
   const queryTypes = classifyQuery(query);
   
-  // 2. Expand based on classification
+  // Standard query expansion
   const expandedQueries = expandQueryByType(query, queryTypes);
   
-  // 3. Log for debugging
-  console.log(`[QueryPreprocessor] Original: "${query}"`);
-  console.log(`[QueryPreprocessor] Types: ${queryTypes.join(', ')}`);
-  console.log(`[QueryPreprocessor] Expanded: ${expandedQueries.length} variations`);
+  // If no chat history or only one message, use standard preprocessing
+  if (!chatHistory || chatHistory.length < 2) {
+    return expandedQueries;
+  }
+  
+  // Check if this is a follow-up question
+  if (detectFollowUp(query)) {
+    console.log('[Follow-up Detection] Detected potential follow-up question:', query);
+    
+    // Get the previous question (most recent user message before current)
+    const previousUserMessages = chatHistory
+      .filter(msg => msg.isUser)
+      .slice(-2, -1);
+    
+    const previousQuestion = previousUserMessages.length > 0 
+      ? previousUserMessages[0].content 
+      : '';
+    
+    // Extract entities from the conversation
+    const entities = extractEntitiesFromHistory(chatHistory);
+    console.log('[Follow-up Detection] Extracted entities:', entities.map(e => e.text).join(', '));
+    
+    // Create a follow-up specific expansion
+    if (entities.length > 0) {
+      const reformulated = reformulateFollowUp(query, entities, previousQuestion);
+      
+      // If the query was successfully reformulated, add it as the primary query
+      if (reformulated !== query) {
+        console.log('[Follow-up Detection] Reformulated query:', reformulated);
+        return [reformulated, ...expandedQueries];
+      }
+    }
+  }
   
   return expandedQueries;
 }

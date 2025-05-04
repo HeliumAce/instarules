@@ -235,7 +235,8 @@ const GameChat = () => {
     askMutation.mutate(
       { 
         question: userMessage,
-        chatHistory: chatHistory.length > 0 ? chatHistory : undefined 
+        chatHistory: chatHistory.length > 0 ? chatHistory : undefined,
+        skipFollowUpHandling: true // Explicitly skip follow-up handling for source selections to treat them as fresh queries
       },
       {
         onSuccess: handleMutationSuccess,
