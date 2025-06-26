@@ -1,0 +1,10 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+
+# Your rule content
+
+- Avoid hard coding game specific rules into project files
+- Instead consider how to implement requests to scale for multiple games

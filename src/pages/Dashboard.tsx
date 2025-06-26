@@ -41,14 +41,14 @@ const Dashboard = () => {
               className="group relative overflow-hidden rounded-xl bg-card transition-all hover-scale border-glow"
               onClick={() => navigate(`/games/${game.id}`)}
             >
-              <div className="relative aspect-[3/2] bg-card p-4">
+              <div className="relative aspect-3/2 bg-card p-4">
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
                     toggleFavorite(game.id);
                   }}
                   className={cn(
-                    "absolute right-3 top-3 rounded-full bg-black/40 p-2 backdrop-blur-sm transition-all",
+                    "absolute right-3 top-3 rounded-full bg-black/40 p-2 backdrop-blur-xs transition-all",
                     game.isFavorite ? "text-yellow-400" : "text-white/70 hover:text-white"
                   )}
                 >
