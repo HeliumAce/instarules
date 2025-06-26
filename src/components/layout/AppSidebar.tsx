@@ -109,7 +109,7 @@ const AppSidebar = () => {
                           }
                         }}
                         className={cn(
-                          "ml-2 p-1 rounded-md focus:outline-none focus:ring-2 focus:ring-ring",
+                          "ml-2 p-1 rounded-md focus:outline-hidden focus:ring-2 focus:ring-ring",
                           game.isFavorite ? "text-yellow-400" : "text-gray-400 hover:text-yellow-400"
                         )}
                       >
@@ -157,7 +157,7 @@ const AppSidebar = () => {
                         }
                       }}
                       className={cn(
-                        "ml-2 p-1 rounded-md focus:outline-none focus:ring-2 focus:ring-ring",
+                        "ml-2 p-1 rounded-md focus:outline-hidden focus:ring-2 focus:ring-ring",
                         game.isFavorite ? "text-yellow-400" : "text-gray-400 hover:text-yellow-400"
                       )}
                     >

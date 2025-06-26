@@ -13,6 +13,9 @@ import { LogOut, User } from 'lucide-react';
 const UserMenu = () => {
   const { user, signOut, loading } = useAuth();
 
+  // Calculate initials for all cases to avoid conditional execution
+  const initials = user?.email ? user.email.substring(0, 2).toUpperCase() : 'U';
+
   if (loading) {
     return <div className="flex items-center justify-center w-full py-2"><Button variant="ghost" size="sm" disabled className="w-full">Loading...</Button></div>;
   }
@@ -26,8 +29,6 @@ const UserMenu = () => {
       </div>
     );
   }
-
-  const initials = user.email ? user.email.substring(0, 2).toUpperCase() : 'U';
 
   return (
     <DropdownMenu>
