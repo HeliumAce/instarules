@@ -607,7 +607,7 @@ export function useGameRules(gameId: string): UseGameRulesReturn {
       const isDedupByName = isCardEnumerationQuestion; // Use name-based dedup for card enumeration
       
       // Deduplicate vector results with adaptable strategy
-      const allResults = [...vectorResults];
+      let allResults = [...vectorResults];
       
       // For complex questions or low result count, try adding broader context
       if ((queryTypes.some(type => 
