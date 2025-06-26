@@ -96,8 +96,31 @@ const processArcsHtmlContent = (baseRulesHtml: string, blightedReachHtml: string
   return sections;
 }
 
+// Add this new function near the top of the file (around line 95, before loadArcsRules)
+const getGameMetadata = (gameId: string): { game: string } => {
+  const gameNames: Record<string, string> = {
+    'arcs': 'Arcs',
+    'radlands': 'Radlands',
+    'bohnanza': 'Bohnanza',
+    'modern-art': 'Modern Art',
+    'catan': 'Catan',
+    'ticket-to-ride': 'Ticket to Ride',
+    'pandemic': 'Pandemic',
+    'wingspan': 'Wingspan',
+    'scythe': 'Scythe',
+    'terraforming-mars': 'Terraforming Mars',
+    'gloomhaven': 'Gloomhaven',
+    'azul': 'Azul'
+    // Add other games as needed
+  };
+  
+  return {
+    game: gameNames[gameId] || 'Unknown Game'
+  };
+};
+
 // Main function to load Arcs rules from multiple sources
-const loadArcsRules = async (): Promise<any> => {
+/* const loadArcsRules = async (): Promise<any> => {
   try {
     const cardsBasePromise = import('@/data/games/arcs/cards-base.json');
     const cardsBlightedReachPromise = import('@/data/games/arcs/cards-blighted-reach.json');
@@ -160,7 +183,8 @@ const loadArcsRules = async (): Promise<any> => {
 export const fetchGameRules = async (gameId: string): Promise<any> => {
   try {
     if (gameId === 'arcs') {
-      return await loadArcsRules();
+      // Return lightweight metadata instead of full rules for pure vector search
+      return getGameMetadata(gameId);
     }
     
     const rules = await import(/* @vite-ignore */ `@/data/games/${gameId}/${gameId}-base.json`);
