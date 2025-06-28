@@ -1,4 +1,4 @@
-# Rules FAQ (Blighted Reach)
+# The Blighted Reach Rules FAQ
 
 *Last Updated: August 30, 2024*  
 *Version: Blighted Reach Expansion*  
@@ -86,8 +86,3 @@ While placing the Flagship, if you do not have any Loyal pieces on the map, you 
 The Flagship cannot be the target of Cede Control in the Summit.
 
 You build Upgrades and Armor damaged if your Flagship's system is controlled by someone other than you.
-
-## Changelog
-
-**August 30th, 2024:** Added errata for **Page 25, Lore & Flagships** and **Page 15, The Free States, Raiding**. Reversed the ruling for the **Page 14, Imperial Council Decided** errata for fun and profit. Added the **Resource Slots** clarification section.  
-**July 12th, 2024:** Original release

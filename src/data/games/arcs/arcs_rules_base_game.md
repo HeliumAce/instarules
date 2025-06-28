@@ -1,4 +1,4 @@
-# ARCS Game Documentation
+# Base Game Rules
 
 ## Introduction
 

@@ -1,4 +1,4 @@
-# Rules FAQ
+# Base Game Rules FAQ
 
 *Last Updated: December 20, 2024*  
 *Version: Base Game*  
