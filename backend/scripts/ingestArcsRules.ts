@@ -3,6 +3,7 @@ import { processMarkdownAndChunk, Chunk } from '../utils/markdownProcessor.js';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
+import crypto from 'crypto';
 import 'dotenv/config';
 
 // Define the structure for inserting into the v2 database table
@@ -38,8 +39,7 @@ const ARCS_MARKDOWN_FILES = [
 ];
 
 const EMBEDDINGS_TABLE_NAME = 'arcs_rules_embeddings_v2'; // Updated to v2 table
-const CLEAR_TABLE_BEFORE_INGEST = true; // Set to true to wipe table before adding new data
-const PROCESSING_BATCH_SIZE = 50; // Number of chunks to process in each batch for the Edge Function
+const PROCESSING_BATCH_SIZE = 5; // Number of chunks to process in each batch for the Edge Function (reduced for Free plan limits)
 
 // --- End Configuration ---
 
@@ -62,8 +62,8 @@ const supabaseAdmin: SupabaseClient = createClient(supabaseUrl, supabaseServiceK
  * Generate embeddings using Supabase Edge Function
  */
 async function generateEmbeddings(texts: string[]): Promise<number[][]> {
-    const { data, error } = await supabaseAdmin.functions.invoke('generate-embeddings', {
-        body: { texts }
+    const { data, error } = await supabaseAdmin.functions.invoke('generate-embeddings-native', {
+        body: { inputText: texts }
     });
 
     if (error) {
@@ -71,7 +71,7 @@ async function generateEmbeddings(texts: string[]): Promise<number[][]> {
     }
 
     if (!data || !data.embeddings) {
-        throw new Error('Invalid response from generate-embeddings function');
+        throw new Error('Invalid response from generate-embeddings-native function');
     }
 
     return data.embeddings;
@@ -111,11 +111,153 @@ function prepareDbRows(chunks: Chunk[]): DbEmbeddingRowV2[] {
 }
 
 /**
- * Main ingestion function
+ * File change detection result
+ */
+interface FileChangeStatus {
+    filePath: string;
+    fileName: string;
+    status: 'new' | 'changed' | 'unchanged';
+    currentHash: string;
+    currentLastModified: Date;
+    existingHash?: string;
+    existingLastModified?: Date;
+}
+
+/**
+ * Get existing file metadata from the database
+ */
+async function getExistingFileMetadata(): Promise<Map<string, { file_hash: string; last_modified: Date }>> {
+    const { data, error } = await supabaseAdmin
+        .from(EMBEDDINGS_TABLE_NAME)
+        .select('source_file, file_hash, last_modified')
+        .order('source_file');
+
+    if (error) {
+        console.warn(`⚠️  Could not fetch existing file metadata: ${error.message}`);
+        return new Map();
+    }
+
+    // Create a map of source_file -> latest metadata
+    const fileMetadataMap = new Map<string, { file_hash: string; last_modified: Date }>();
+    
+    if (data) {
+        data.forEach(row => {
+            const existingEntry = fileMetadataMap.get(row.source_file);
+            const currentLastModified = new Date(row.last_modified);
+            
+            // Keep the most recent entry for each file
+            if (!existingEntry || currentLastModified > existingEntry.last_modified) {
+                fileMetadataMap.set(row.source_file, {
+                    file_hash: row.file_hash,
+                    last_modified: currentLastModified
+                });
+            }
+        });
+    }
+
+    return fileMetadataMap;
+}
+
+/**
+ * Detect which files have changed and need re-ingestion
+ */
+async function detectFileChanges(filePaths: string[]): Promise<FileChangeStatus[]> {
+    console.log('🔍 Detecting file changes...');
+    
+    const existingMetadata = await getExistingFileMetadata();
+    const changeStatuses: FileChangeStatus[] = [];
+    
+    for (const filePath of filePaths) {
+        const fileName = path.basename(filePath);
+        
+        try {
+            // Get current file metadata
+            const fileContent = await fs.readFile(filePath, 'utf-8');
+            const fileStats = await fs.stat(filePath);
+            const currentHash = crypto.createHash('sha256').update(fileContent, 'utf8').digest('hex');
+            const currentLastModified = fileStats.mtime;
+            
+            const existingFile = existingMetadata.get(fileName);
+            
+            let status: FileChangeStatus['status'];
+            if (!existingFile) {
+                status = 'new';
+                console.log(`   📄 ${fileName}: NEW FILE`);
+            } else if (existingFile.file_hash !== currentHash) {
+                status = 'changed';
+                console.log(`   📝 ${fileName}: CONTENT CHANGED (hash mismatch)`);
+            } else if (currentLastModified > existingFile.last_modified) {
+                status = 'changed';
+                console.log(`   ⏰ ${fileName}: TIMESTAMP NEWER (${currentLastModified.toISOString()} > ${existingFile.last_modified.toISOString()})`);
+            } else {
+                status = 'unchanged';
+                console.log(`   ✅ ${fileName}: UNCHANGED`);
+            }
+            
+            changeStatuses.push({
+                filePath,
+                fileName,
+                status,
+                currentHash,
+                currentLastModified,
+                existingHash: existingFile?.file_hash,
+                existingLastModified: existingFile?.last_modified
+            });
+            
+        } catch (error: any) {
+            console.error(`❌ Error checking ${fileName}: ${error.message}`);
+            // Treat as new file if we can't read metadata
+            changeStatuses.push({
+                filePath,
+                fileName,
+                status: 'new',
+                currentHash: '',
+                currentLastModified: new Date()
+            });
+        }
+    }
+    
+    const newFiles = changeStatuses.filter(f => f.status === 'new').length;
+    const changedFiles = changeStatuses.filter(f => f.status === 'changed').length;
+    const unchangedFiles = changeStatuses.filter(f => f.status === 'unchanged').length;
+    
+    console.log(`\n📊 Change Detection Summary:`);
+    console.log(`   🆕 New files: ${newFiles}`);
+    console.log(`   📝 Changed files: ${changedFiles}`);
+    console.log(`   ✅ Unchanged files: ${unchangedFiles}`);
+    console.log(`   📋 Total files checked: ${changeStatuses.length}\n`);
+    
+    return changeStatuses;
+}
+
+/**
+ * Remove existing chunks for specific files from the database
+ */
+async function removeExistingChunks(sourceFiles: string[]): Promise<void> {
+    if (sourceFiles.length === 0) return;
+    
+    console.log(`🧹 Removing existing chunks for ${sourceFiles.length} files...`);
+    
+    for (const sourceFile of sourceFiles) {
+        const { error } = await supabaseAdmin
+            .from(EMBEDDINGS_TABLE_NAME)
+            .delete()
+            .eq('source_file', sourceFile);
+            
+        if (error) {
+            console.error(`❌ Error removing chunks for ${sourceFile}: ${error.message}`);
+        } else {
+            console.log(`   ✅ Removed existing chunks for ${sourceFile}`);
+        }
+    }
+}
+
+/**
+ * Main ingestion function with incremental change detection
  */
 async function ingestData() {
     try {
-        console.log('🚀 Starting Arcs Rules Ingestion (v2 Schema)...\n');
+        console.log('🚀 Starting Arcs Rules Incremental Ingestion (v2 Schema)...\n');
 
         // 1. Verify all markdown files exist
         const validFiles: string[] = [];
@@ -133,26 +275,33 @@ async function ingestData() {
             throw new Error(`No valid markdown files found in ${ARCS_DATA_DIR}`);
         }
 
-        console.log(`📚 Found ${validFiles.length} markdown files to process\n`);
+        console.log(`📚 Found ${validFiles.length} markdown files to check\n`);
 
-        // 2. Optional: Clear existing data
-        if (CLEAR_TABLE_BEFORE_INGEST) {
-            console.log('🧹 Clearing existing data from v2 table...');
-            const { error: deleteError } = await supabaseAdmin
-                .from(EMBEDDINGS_TABLE_NAME)
-                .delete()
-                .neq('id', '00000000-0000-0000-0000-000000000000'); // Delete all rows
-
-            if (deleteError) {
-                throw new Error(`Failed to clear table: ${deleteError.message}`);
-            }
-            console.log('✅ Table cleared\n');
+        // 2. Detect file changes
+        const fileChanges = await detectFileChanges(validFiles);
+        const filesToProcess = fileChanges.filter(f => f.status === 'new' || f.status === 'changed');
+        
+        if (filesToProcess.length === 0) {
+            console.log('🎉 All files are up to date! No ingestion needed.');
+            return;
         }
 
-        // 3. Process all markdown files
+        console.log(`📝 Processing ${filesToProcess.length} files that need updates:\n`);
+        filesToProcess.forEach(f => {
+            console.log(`   ${f.status === 'new' ? '🆕' : '📝'} ${f.fileName} (${f.status.toUpperCase()})`);
+        });
+        console.log();
+
+        // 3. Remove existing chunks for files that are being re-ingested
+        const filesToReprocess = fileChanges.filter(f => f.status === 'changed').map(f => f.fileName);
+        if (filesToReprocess.length > 0) {
+            await removeExistingChunks(filesToReprocess);
+        }
+
+        // 4. Process only changed/new markdown files
         const allChunks: Chunk[] = [];
-        for (const filePath of validFiles) {
-            const chunks = await processMarkdownFile(filePath);
+        for (const fileChange of filesToProcess) {
+            const chunks = await processMarkdownFile(fileChange.filePath);
             allChunks.push(...chunks);
         }
 
@@ -244,5 +393,11 @@ async function ingestData() {
     }
 }
 
-// Run the ingestion function
-ingestData();
+// Export functions for use by selective ingestion service
+export { detectFileChanges, removeExistingChunks };
+
+// Run the ingestion function if called directly (not imported)
+const isMainModule = import.meta.url === `file://${process.argv[1]}`;
+if (isMainModule) {
+    ingestData();
+}

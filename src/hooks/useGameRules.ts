@@ -329,8 +329,36 @@ function convertToMessageSources(results: VectorSearchResult[]): MessageSources 
         cardName: cardName || 'Card'
       } as CardSource;
     } else {
-      // Extract more descriptive info for rules
+      // Extract enhanced metadata from the v2 schema
       const content = result.content || '';
+      
+      // Use h1_heading as the primary source/book name (new enhanced metadata)
+      const h1Heading = (result as any).h1_heading || metadata.h1_heading;
+      let bookName = h1Heading || "Rulebook";
+      
+      // Clean up H1 heading for display (remove file extensions, convert to title case)
+      if (bookName && bookName !== "Rulebook") {
+        // Convert common patterns to readable names
+        bookName = bookName
+          .replace(/^arcs_/i, '')
+          .replace(/_/g, ' ')
+          .replace(/\b\w/g, l => l.toUpperCase());
+        
+        // Map specific patterns to cleaner names
+        const cleanNames: Record<string, string> = {
+          'Rules Base Game': 'Base Game Rules',
+          'Rules Blighted Reach': 'Blighted Reach Rules', 
+          'Cards Base Game': 'Base Game Cards',
+          'Cards Blighted Reach': 'Blighted Reach Cards',
+          'Cards Leaders And Lore': 'Leaders and Lore',
+          'Cards Errata': 'Card Errata',
+          'Faq Base Game': 'Base Game FAQ',
+          'Faq Blighted Reach': 'Blighted Reach FAQ',
+          'Cards Faq': 'Cards FAQ'
+        };
+        
+        bookName = cleanNames[bookName] || bookName;
+      }
       
       // Try to extract page number
       let pageNumber = metadata.page ? parseInt(metadata.page) : undefined;
@@ -341,15 +369,15 @@ function convertToMessageSources(results: VectorSearchResult[]): MessageSources 
         }
       }
       
-      // Try to extract a meaningful section heading
-      let sourceHeading = metadata.heading || metadata.section || '';
-      if (!sourceHeading || sourceHeading === 'Rules') {
-        // Try to find section title in content
+      // Use source_heading from metadata as the specific section within the book
+      let sourceHeading = metadata.source_heading || metadata.heading || '';
+      if (!sourceHeading) {
+        // Try to find section title in content as fallback
         const lines = content.split('\n');
         const titleLine = lines.find(line => 
           /^[A-Z].*[A-Z]/.test(line) || // Contains uppercase letters
           line.includes(':') || // Contains a colon
-          line.length < 40 // Short line that might be a title
+          (line.length < 40 && line.length > 5) // Short line that might be a title
         );
         
         if (titleLine) {
@@ -368,16 +396,13 @@ function convertToMessageSources(results: VectorSearchResult[]): MessageSources 
           .join(' ');
       }
       
-      // Get book/source name - simplify to just use "Rulebook" for all rule sources
-      let bookName = "Rulebook";
-      
-      // Default to rule source with improved details
+      // Default to rule source with enhanced v2 metadata
       return {
         id: result.id,
         contentType: 'rule',
         title: metadata.title || sourceHeading || 'Rule',
         bookName: bookName,
-        headings: metadata.heading_path || [],
+        headings: metadata.headings || [],
         sourceHeading: sourceHeading || 'General Rules',
         pageNumber: pageNumber
       } as RuleSource;

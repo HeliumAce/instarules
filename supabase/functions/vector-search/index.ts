@@ -2,48 +2,6 @@
 
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { pipeline, env, Pipeline } from 'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.1';
-
-// --- Environment Setup for Transformers.js ---
-// Prevent loading local models - ensures deployment works
-env.allowLocalModels = false;
-// Disable browser caching in server environment
-env.useBrowserCache = false;
-// Specify a writable cache directory for Deno Deploy/Edge Functions
-env.cacheDir = '/tmp/hf-cache';
-
-// --- Model Initialization (Singleton Pattern) ---
-const MODEL_NAME = 'Supabase/gte-small';
-let extractor: Pipeline | null = null;
-let modelLoadingPromise: Promise<Pipeline> | null = null;
-
-async function getExtractor(): Promise<Pipeline> {
-  if (extractor) {
-    return extractor;
-  }
-  if (!modelLoadingPromise) {
-    console.log(`Initializing embedding model: ${MODEL_NAME}`);
-    modelLoadingPromise = new Promise(async (resolve, reject) => {
-      try {
-        // Initialize the feature-extraction pipeline
-        const loadedExtractor = await pipeline('feature-extraction', MODEL_NAME, {
-          quantized: false,
-        });
-        console.log('Embedding model loaded successfully.');
-        extractor = loadedExtractor;
-        resolve(loadedExtractor);
-      } catch (error) {
-        console.error(`Failed to load embedding model '${MODEL_NAME}':`, error);
-        modelLoadingPromise = null;
-        reject(error);
-      }
-    });
-  }
-  return modelLoadingPromise;
-}
-
-// Pre-warm the model on function startup
-getExtractor().catch(err => console.error("Initial model load failed:", err));
 
 // Define required types
 interface ArcsRuleSearchResult {
@@ -62,7 +20,7 @@ const corsHeaders = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 }
 
-console.log("Vector search function initializing with Supabase gte-small embeddings...");
+console.log("Vector search function initializing with Supabase Native AI...");
 
 serve(async (req) => {
   // Handle CORS preflight requests
@@ -88,28 +46,22 @@ serve(async (req) => {
     }
     console.log(`Received query: "${query}"`);
 
-    // 2. Generate embedding for the query using Supabase gte-small
+    // 2. Generate embedding for the query using Supabase Native AI
     let queryEmbedding: number[];
     try {
-      console.log('Generating query embedding with Supabase gte-small...');
-      const model = await getExtractor();
+      console.log('Generating query embedding with Supabase Native AI...');
       
-      const output = await model([query], {
-        pooling: 'mean',
+      // Use Supabase AI Session (same as our working embedding generation)
+      const session = new Supabase.ai.Session('gte-small');
+      const embedding = await session.run(query, {
+        mean_pool: true,
         normalize: true,
       });
       
-      const embeddings = output.tolist();
-      
-      // Extract single embedding
-      if (Array.isArray(embeddings) && embeddings.length > 0) {
-        queryEmbedding = Array.isArray(embeddings[0]) ? embeddings[0] : embeddings;
-      } else {
-        throw new Error('Failed to generate query embedding: empty result');
-      }
+      queryEmbedding = embedding;
       
       console.log(`Generated embedding with dimension: ${queryEmbedding.length}`);
-      if (queryEmbedding.length !== 384) { // Dimension for Supabase gte-small
+      if (queryEmbedding.length !== 384) { // Dimension for gte-small
            throw new Error(`Embedding dimension mismatch. Expected 384, got ${queryEmbedding.length}`);
        }
     } catch (error) {
@@ -199,5 +151,3 @@ serve(async (req) => {
     })
   }
 })
-
-console.log("Vector search function ready with Supabase gte-small embeddings (384-dimensional)."); 

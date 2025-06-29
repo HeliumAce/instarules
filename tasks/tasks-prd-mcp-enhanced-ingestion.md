@@ -5,8 +5,14 @@ Based on PRD: `prd-mcp-enhanced-ingestion.md`
 ## Relevant Files
 
 - `backend/utils/markdownProcessorPrecise.ts` → `backend/utils/markdownProcessor.ts` - Main markdown processing logic to be consolidated and enhanced with source attribution
+- `backend/scripts/ingestArcsRules.ts` - Enhanced ingestion script with incremental file change detection using file hashes and modification timestamps
+- `backend/services/ingestionService.ts` - MCP-style selective ingestion service with natural language command parsing and execution
+- `backend/scripts/mcpIngestion.ts` - CLI wrapper for MCP ingestion commands with natural language interface
+- `backend/scripts/testIncrementalIngestion.ts` - Test suite for validating incremental ingestion workflow with controlled file changes
+- `src/hooks/useGameRules.ts` - Enhanced to consume `h1_heading` from v2 database schema for improved source attribution
+- `src/pages/GameChat.tsx` - Updated Sources tooltip component to display H1 headings prominently (e.g., "Base Game Rules", "Cards FAQ")
 - `supabase/functions/generate-embeddings/index.ts` - Edge Function for embedding generation (already using Supabase gte-small)
-- `supabase/functions/git avector-search/index.ts` - Edge Function for query embeddings, needs update from OpenAI to Supabase AI inference
+- `supabase/functions/vector-search/index.ts` - Edge Function for query embeddings, updated to use Supabase AI inference instead of OpenAI
 - `supabase/migrations/20250629135110_create_arcs_rules_embeddings_v2.sql` - New database migration for enhanced table schema with VECTOR(384) (created and applied)
 - `.cursor/mcp.json` - MCP configuration file for Supabase server integration (created with template, needs project-ref and access token)
 - `src/data/games/arcs/*.md` - Arcs markdown files with standardized H1 headings (9 files updated: 3 fixed multiple H1s, 6 already correct)
@@ -52,11 +58,11 @@ Based on PRD: `prd-mcp-enhanced-ingestion.md`
   - [x] 3.7 Update ingestion script `backend/scripts/ingestArcsRules.ts` to use enhanced processor and v2 database schema
 
 - [ ] 4.0 Implement Incremental Ingestion and Testing
-  - [ ] 4.1 Implement file change detection logic using file hashes and modification timestamps
-  - [ ] 4.2 Create MCP commands for selective file ingestion (e.g., "re-ingest base game rules")
-  - [ ] 4.3 Add validation to prevent ingestion of files with malformed H1 headings
-  - [ ] 4.4 Test incremental ingestion workflow with sample file updates
-  - [ ] 4.5 Update frontend Sources tooltip component to consume `h1_heading` from enhanced metadata
+  - [x] 4.1 Implement file change detection logic using file hashes and modification timestamps
+  - [x] 4.2 Create MCP commands for selective file ingestion (e.g., "re-ingest base game rules")
+  - [x] 4.3 Add validation to prevent ingestion of files with malformed H1 headings (SKIPPED - over-engineering, H1s already standardized)
+  - [x] 4.4 Test incremental ingestion workflow with sample file updates
+  - [x] 4.5 Update frontend Sources tooltip component to consume `h1_heading` from enhanced metadata
   - [ ] 4.6 Test end-to-end workflow: content update → ingestion → frontend display
   - [ ] 4.7 Validate search quality and similarity functionality matches/exceeds current performance (moved from 2.7)
   - [ ] 4.8 Create comprehensive test suite for search quality validation
