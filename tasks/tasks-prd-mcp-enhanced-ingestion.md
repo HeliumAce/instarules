@@ -30,7 +30,7 @@ Based on PRD: `prd-mcp-enhanced-ingestion.md`
   - [x] 1.4 Create database migration `supabase/migrations/[timestamp]_create_arcs_rules_embeddings_v2.sql` with VECTOR(384) schema
   - [x] 1.5 Test MCP connectivity with basic database queries
   - [x] 1.6 Standardize H1 headings in all Arcs markdown files (ensure exactly one H1 per file)
-  - [ ] 1.7 Create content validation script `tasks/h1-validation-script.js` to check H1 compliance
+  - [ ] 1.7 Create content validation script `tasks/h1-validation-script.js` to check H1 compliance (DEFERRED - manual validation completed)
 
 - [ ] 2.0 Migrate Embedding Architecture from OpenAI to Supabase Native
   - [ ] 2.1 Update `supabase/functions/generate-embeddings/index.ts` to use `Supabase.ai.Session('gte-small')`
