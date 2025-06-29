@@ -6,7 +6,7 @@ Based on PRD: `prd-mcp-enhanced-ingestion.md`
 
 - `backend/utils/markdownProcessorPrecise.ts` → `backend/utils/markdownProcessor.ts` - Main markdown processing logic to be consolidated and enhanced with source attribution
 - `supabase/functions/generate-embeddings/index.ts` - Edge Function for embedding generation, needs update from OpenAI to Supabase AI inference
-- `supabase/migrations/[timestamp]_create_arcs_rules_embeddings_v2.sql` - New database migration for enhanced table schema with VECTOR(384)
+- `supabase/migrations/20250629135110_create_arcs_rules_embeddings_v2.sql` - New database migration for enhanced table schema with VECTOR(384) (created and applied)
 - `.cursor/mcp.json` - MCP configuration file for Supabase server integration (created with template, needs project-ref and access token)
 - `src/data/games/arcs/*.md` - Arcs markdown files requiring H1 standardization
 - `src/components/ui/*.tsx` - Frontend Sources tooltip component for consuming enhanced metadata
@@ -27,8 +27,8 @@ Based on PRD: `prd-mcp-enhanced-ingestion.md`
   - [x] 1.1 Install and configure Supabase MCP server (`@supabase/mcp-server-supabase@latest`)
   - [x] 1.2 Create `.cursor/mcp.json` configuration file with Supabase server settings
   - [x] 1.3 Set up personal access token for MCP authentication
-  - [ ] 1.4 Create database migration `supabase/migrations/[timestamp]_create_arcs_rules_embeddings_v2.sql` with VECTOR(384) schema
-  - [ ] 1.5 Test MCP connectivity with basic database queries
+  - [x] 1.4 Create database migration `supabase/migrations/[timestamp]_create_arcs_rules_embeddings_v2.sql` with VECTOR(384) schema
+  - [x] 1.5 Test MCP connectivity with basic database queries
   - [ ] 1.6 Standardize H1 headings in all Arcs markdown files (ensure exactly one H1 per file)
   - [ ] 1.7 Create content validation script `tasks/h1-validation-script.js` to check H1 compliance
 
