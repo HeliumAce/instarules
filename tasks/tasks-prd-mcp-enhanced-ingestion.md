@@ -6,7 +6,7 @@ Based on PRD: `prd-mcp-enhanced-ingestion.md`
 
 - `backend/utils/markdownProcessorPrecise.ts` → `backend/utils/markdownProcessor.ts` - Main markdown processing logic to be consolidated and enhanced with source attribution
 - `supabase/functions/generate-embeddings/index.ts` - Edge Function for embedding generation (already using Supabase gte-small)
-- `supabase/functions/vector-search/index.ts` - Edge Function for query embeddings, needs update from OpenAI to Supabase AI inference
+- `supabase/functions/git avector-search/index.ts` - Edge Function for query embeddings, needs update from OpenAI to Supabase AI inference
 - `supabase/migrations/20250629135110_create_arcs_rules_embeddings_v2.sql` - New database migration for enhanced table schema with VECTOR(384) (created and applied)
 - `.cursor/mcp.json` - MCP configuration file for Supabase server integration (created with template, needs project-ref and access token)
 - `src/data/games/arcs/*.md` - Arcs markdown files with standardized H1 headings (9 files updated: 3 fixed multiple H1s, 6 already correct)
@@ -42,14 +42,14 @@ Based on PRD: `prd-mcp-enhanced-ingestion.md`
   - [x] 2.6 Test end-to-end search functionality with new 384-dimensional embeddings
   - [ ] 2.7 Validate search quality and similarity functionality matches/exceeds current performance (DEFERRED - requires populated v2 table, moved to Phase 4)
 
-- [ ] 3.0 Enhance Content Processing and Source Attribution
-  - [ ] 3.1 Rename `backend/utils/markdownProcessorPrecise.ts` to `backend/utils/markdownProcessor.ts`
-  - [ ] 3.2 Remove old `backend/utils/markdownProcessor.ts` file
-  - [ ] 3.3 Enhance processor to capture `source_file`, `h1_heading`, `file_hash`, and `last_modified` metadata
-  - [ ] 3.4 Implement content-type specific chunking strategies (rules: 200 chars, cards: 150 chars, FAQ: 250 chars)
-  - [ ] 3.5 Add file hash calculation for change detection
-  - [ ] 3.6 Update processor to generate enhanced JSONB metadata structure
-  - [ ] 3.7 Create unit tests for enhanced markdown processor functionality
+- [x] 3.0 Enhance Content Processing and Source Attribution
+  - [x] 3.1 Rename `backend/utils/markdownProcessorPrecise.ts` to `backend/utils/markdownProcessor.ts`
+  - [x] 3.2 Remove old `backend/utils/markdownProcessor.ts` file
+  - [x] 3.3 Enhance processor to capture `source_file`, `h1_heading`, `file_hash`, and `last_modified` metadata
+  - [x] 3.4 Implement content-type specific chunking strategies (rules: 200 chars, cards: 150 chars, FAQ: 250 chars)
+  - [x] 3.5 Add file hash calculation for change detection (completed in 3.3 - SHA-256 hash of file content)
+  - [x] 3.6 Update processor to generate enhanced JSONB metadata structure (separated fileMetadata from JSONB metadata for v2 schema optimization)
+  - [x] 3.7 Update ingestion script `backend/scripts/ingestArcsRules.ts` to use enhanced processor and v2 database schema
 
 - [ ] 4.0 Implement Incremental Ingestion and Testing
   - [ ] 4.1 Implement file change detection logic using file hashes and modification timestamps
