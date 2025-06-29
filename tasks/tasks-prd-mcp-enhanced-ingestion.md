@@ -5,7 +5,8 @@ Based on PRD: `prd-mcp-enhanced-ingestion.md`
 ## Relevant Files
 
 - `backend/utils/markdownProcessorPrecise.ts` → `backend/utils/markdownProcessor.ts` - Main markdown processing logic to be consolidated and enhanced with source attribution
-- `supabase/functions/generate-embeddings/index.ts` - Edge Function for embedding generation, needs update from OpenAI to Supabase AI inference
+- `supabase/functions/generate-embeddings/index.ts` - Edge Function for embedding generation (already using Supabase gte-small)
+- `supabase/functions/vector-search/index.ts` - Edge Function for query embeddings, needs update from OpenAI to Supabase AI inference
 - `supabase/migrations/20250629135110_create_arcs_rules_embeddings_v2.sql` - New database migration for enhanced table schema with VECTOR(384) (created and applied)
 - `.cursor/mcp.json` - MCP configuration file for Supabase server integration (created with template, needs project-ref and access token)
 - `src/data/games/arcs/*.md` - Arcs markdown files with standardized H1 headings (9 files updated: 3 fixed multiple H1s, 6 already correct)
@@ -33,13 +34,13 @@ Based on PRD: `prd-mcp-enhanced-ingestion.md`
   - [ ] 1.7 Create content validation script `tasks/h1-validation-script.js` to check H1 compliance (DEFERRED - manual validation completed)
 
 - [ ] 2.0 Migrate Embedding Architecture from OpenAI to Supabase Native
-  - [ ] 2.1 Update `supabase/functions/generate-embeddings/index.ts` to use `Supabase.ai.Session('gte-small')`
-  - [ ] 2.2 Remove OpenAI API client and dependencies from Edge Function
-  - [ ] 2.3 Remove OpenAI API key from environment variables and secrets
-  - [ ] 2.4 Update embedding generation logic to handle 384-dimensional vectors
-  - [ ] 2.5 Add proper error handling for Supabase AI inference failures
-  - [ ] 2.6 Test new embedding generation with sample content
-  - [ ] 2.7 Validate embedding quality and similarity search functionality
+  - [x] 2.1 Update `supabase/functions/generate-embeddings/index.ts` to use Supabase gte-small (already complete)
+  - [x] 2.2 Update `supabase/functions/vector-search/index.ts` to use Supabase AI inference instead of OpenAI
+  - [x] 2.3 Remove OpenAI API client and dependencies from vector-search Edge Function  
+  - [x] 2.4 Update vector-search logic to handle 384-dimensional vectors and arcs_rules_embeddings_v2 table
+  - [x] 2.5 Remove OpenAI API key from environment variables and secrets
+  - [x] 2.6 Test end-to-end search functionality with new 384-dimensional embeddings
+  - [ ] 2.7 Validate search quality and similarity functionality matches/exceeds current performance (DEFERRED - requires populated v2 table, moved to Phase 4)
 
 - [ ] 3.0 Enhance Content Processing and Source Attribution
   - [ ] 3.1 Rename `backend/utils/markdownProcessorPrecise.ts` to `backend/utils/markdownProcessor.ts`
@@ -57,7 +58,8 @@ Based on PRD: `prd-mcp-enhanced-ingestion.md`
   - [ ] 4.4 Test incremental ingestion workflow with sample file updates
   - [ ] 4.5 Update frontend Sources tooltip component to consume `h1_heading` from enhanced metadata
   - [ ] 4.6 Test end-to-end workflow: content update → ingestion → frontend display
-  - [ ] 4.7 Create comprehensive test suite for search quality validation
+  - [ ] 4.7 Validate search quality and similarity functionality matches/exceeds current performance (moved from 2.7)
+  - [ ] 4.8 Create comprehensive test suite for search quality validation
 
 - [ ] 5.0 Execute Production Cutover and System Cleanup
   - [ ] 5.1 Deploy updated Edge Function with Supabase AI inference to production
