@@ -6,11 +6,9 @@ This document contains comprehensive rules, FAQs, and card information for the A
 
 The document is structured into major sections: Base Game Rules, The Blighted Reach Expansion Rules, Card References, Errata and Clarifications, and Frequently Asked Questions.
 
-# Base Game Rules
-
 ## Page 1
 
-# ARCS (Page 1)
+## ARCS (Page 1)
 
 ## CONTENTS (Page 1)
 

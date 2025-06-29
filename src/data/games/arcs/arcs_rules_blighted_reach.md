@@ -2,7 +2,7 @@
 
 ## Page 1
 
-# ARCS (Page 1)
+## ARCS (Page 1)
 
 ## THE BLIGHTED REACH EXPANSION (Page 1)
 
