@@ -29,9 +29,17 @@ interface SourcesListProps {
 }
 
 const SourcesList = ({ sources, onSourceClick, closeTooltip }: SourcesListProps) => {
-  // Group sources by type
-  const rulesSources = sources.filter((s): s is RuleSource => s.contentType === 'rule');
-  const cardSources = sources.filter((s): s is CardSource => s.contentType === 'card');
+  // Group sources by bookName (source document)
+  const sourcesByBook = sources.reduce((acc, source) => {
+    const bookName = source.contentType === 'rule' ? (source as RuleSource).bookName : 
+                     source.contentType === 'card' ? (source as CardSource).cardName : 'Other';
+    
+    if (!acc[bookName]) {
+      acc[bookName] = [];
+    }
+    acc[bookName].push(source);
+    return acc;
+  }, {} as Record<string, Source[]>);
 
   const handleClick = (source: Source) => {
     // Call the onSourceClick handler
@@ -41,51 +49,73 @@ const SourcesList = ({ sources, onSourceClick, closeTooltip }: SourcesListProps)
   };
 
   return (
-    <div className="mt-2 space-y-2 text-sm">
-      {rulesSources.length > 0 && (
-        <div>
-          <h4 className="font-medium text-xs uppercase tracking-wider text-muted-foreground mb-1">Rules</h4>
+    <div className="mt-2 space-y-3 text-sm">
+      {Object.entries(sourcesByBook).map(([bookName, bookSources]) => (
+        <div key={bookName}>
+          <h4 className="font-medium text-xs uppercase tracking-wider text-muted-foreground mb-1">
+            {bookName}
+          </h4>
           <ul className="space-y-1">
-            {rulesSources.map((source) => (
+            {bookSources.map((source) => (
               <li key={source.id}>
                 <button
                   onClick={() => handleClick(source)}
                   className="text-left w-full hover:text-foreground text-muted-foreground transition-colors line-clamp-2"
-                  title={`${source.bookName} - ${source.sourceHeading}${source.pageNumber ? ` (p.${source.pageNumber})` : ''}`}
+                  title={(() => {
+                    if (source.contentType === 'rule') {
+                      const ruleSource = source as RuleSource;
+                      // Check if this is a card source (title contains "(ID: ")
+                      const cardMatch = ruleSource.title.match(/^(.+?)\s*\(ID:\s*([^)]+)\)$/);
+                      if (cardMatch) {
+                        return `${cardMatch[1]} (${cardMatch[2]})`;
+                      }
+                      // Regular rule source
+                      return `${ruleSource.sourceHeading}${ruleSource.pageNumber ? ` (p.${ruleSource.pageNumber})` : ''}`;
+                    } else {
+                      return `${(source as CardSource).cardName} (${(source as CardSource).cardId})`;
+                    }
+                  })()}
                 >
-                  <div className="font-semibold">{source.sourceHeading}</div>
-                  <div className="text-xs opacity-75 flex items-center">
-                    {source.bookName}
-                    {source.pageNumber && <span className="ml-1">p.{source.pageNumber}</span>}
+                  <div className="font-semibold">
+                    {(() => {
+                      if (source.contentType === 'rule') {
+                        const ruleSource = source as RuleSource;
+                        // Check if this is a card source (title contains "(ID: ")
+                        const cardMatch = ruleSource.title.match(/^(.+?)\s*\(ID:\s*([^)]+)\)$/);
+                        if (cardMatch) {
+                          return cardMatch[1]; // Return card name without ID
+                        }
+                        // Regular rule source - convert to Title Case
+                        const cleanHeading = ruleSource.sourceHeading.replace(/\s*\(Page\s*\d+\)\s*$/i, '');
+                        return cleanHeading.toLowerCase().replace(/\b\w/g, l => l.toUpperCase());
+                      } else {
+                        return (source as CardSource).cardName;
+                      }
+                    })()}
+                  </div>
+                  <div className="text-xs opacity-75">
+                    {(() => {
+                      if (source.contentType === 'rule') {
+                        const ruleSource = source as RuleSource;
+                        // Check if this is a card source (title contains "(ID: ")
+                        const cardMatch = ruleSource.title.match(/^(.+?)\s*\(ID:\s*([^)]+)\)$/);
+                        if (cardMatch) {
+                          return cardMatch[2]; // Return card ID without "ID: " prefix
+                        }
+                        // Regular rule source with page number
+                        return ruleSource.pageNumber ? `Page ${ruleSource.pageNumber}` : '';
+                      } else if (source.contentType === 'card') {
+                        return (source as CardSource).cardId;
+                      }
+                      return '';
+                    })()}
                   </div>
                 </button>
               </li>
             ))}
           </ul>
         </div>
-      )}
-
-      {cardSources.length > 0 && (
-        <div>
-          <h4 className="font-medium text-xs uppercase tracking-wider text-muted-foreground mb-1">Cards</h4>
-          <ul className="space-y-1">
-            {cardSources.map((source) => (
-              <li key={source.id}>
-                <button
-                  onClick={() => handleClick(source)}
-                  className="text-left w-full hover:text-foreground text-muted-foreground transition-colors line-clamp-2"
-                  title={`${source.cardName} (${source.cardId})`}
-                >
-                  <div className="font-semibold">{source.cardName}</div>
-                  {source.cardId && (
-                    <div className="text-xs opacity-75">ID: {source.cardId}</div>
-                  )}
-                </button>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
+      ))}
     </div>
   );
 };
@@ -207,9 +237,16 @@ const GameChat = () => {
     let userMessage = '';
     
     if (source.contentType === 'rule') {
-      // Format: "Heading, Rulebook p.XX"
       const ruleSource = source as RuleSource;
-      userMessage = `${ruleSource.sourceHeading}, Rulebook p.${ruleSource.pageNumber || '?'}`;
+      // Check if this is a card source (title contains "(ID: ")
+      const cardMatch = ruleSource.title.match(/^(.+?)\s*\(ID:\s*([^)]+)\)$/);
+      if (cardMatch) {
+        // Format: "Card Name, ID: XXX"
+        userMessage = `${cardMatch[1]}, ID: ${cardMatch[2]}`;
+      } else {
+        // Format: "Heading, Rulebook p.XX"
+        userMessage = `${ruleSource.sourceHeading}, Rulebook p.${ruleSource.pageNumber || '?'}`;
+      }
     } else if (source.contentType === 'card') {
       // Format: "Card Name, ID: XXX"
       const cardSource = source as CardSource;
