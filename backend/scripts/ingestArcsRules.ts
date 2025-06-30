@@ -38,7 +38,7 @@ const ARCS_MARKDOWN_FILES = [
     'arcs_cards_faq.md'
 ];
 
-const EMBEDDINGS_TABLE_NAME = 'arcs_rules_embeddings_v2'; // Updated to v2 table
+const EMBEDDINGS_TABLE_NAME = 'arcs_rules_embeddings'; // Production table after v2 cutover
 const PROCESSING_BATCH_SIZE = 5; // Number of chunks to process in each batch for the Edge Function (reduced for Free plan limits)
 
 // --- End Configuration ---

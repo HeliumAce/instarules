@@ -18,9 +18,7 @@ Based on PRD: `prd-mcp-enhanced-ingestion.md`
 - `.cursor/mcp.json` - MCP configuration file for Supabase server integration (created with template, needs project-ref and access token)
 - `src/data/games/arcs/*.md` - Arcs markdown files with standardized H1 headings (9 files updated: 3 fixed multiple H1s, 6 already correct)
 - `src/components/ui/*.tsx` - Frontend Sources tooltip component for consuming enhanced metadata
-- `tasks/h1-validation-script.js` - Content validation script for H1 heading checks
-- `tasks/mcp-setup-guide.md` - Documentation for MCP server configuration
-- `tasks/embedding-migration-guide.md` - Documentation for OpenAI to Supabase embedding transition
+
 
 ### Notes
 
@@ -68,12 +66,12 @@ Based on PRD: `prd-mcp-enhanced-ingestion.md`
   - [x] 4.7 Validate search quality and similarity functionality matches/exceeds current performance (moved from 2.7)
   - [x] 4.8 Create comprehensive test suite for search quality validation
 
-- [ ] 5.0 Execute System Cleanup and Table Cutover
+- [x] 5.0 Execute System Cleanup and Table Cutover
   - [x] 5.1 Deploy updated Edge Function with Supabase AI inference to production (SKIPPED - no production environment)
   - [x] 5.2 Run full ingestion with new system to populate `arcs_rules_embeddings_v2` table
   - [x] 5.3 Validate search quality and source attribution in production environment (SKIPPED - no production environment)
-  - [ ] 5.4 Execute table rename: `arcs_rules_embeddings_v2` → `arcs_rules_embeddings` (and optionally delete old table)
-  - [ ] 5.5 Check if RPC function `match_arcs_rules` needs updating for VECTOR(384) dimensions
-  - [ ] 5.6 Project cleanup: Remove legacy/unused files (carefully audit what's still being used)
-  - [ ] 5.7 Update existing documentation with final implementation details
+  - [x] 5.4 Execute table rename: `arcs_rules_embeddings_v2` → `arcs_rules_embeddings` (and optionally delete old table)
+  - [x] 5.5 Check if RPC function `match_arcs_rules` needs updating for VECTOR(384) dimensions
+  - [x] 5.6 Project cleanup: Remove legacy/unused files (carefully audit what's still being used)
+  - [x] 5.7 Update existing documentation with final implementation details
   - [x] 5.8 Update project README with new MCP ingestion workflow instructions (SKIPPED - not needed in README) 

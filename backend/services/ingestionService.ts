@@ -57,7 +57,7 @@ const FILE_GROUPS = {
     'all_files': Object.values(ARCS_FILE_MAPPINGS).filter((v, i, a) => a.indexOf(v) === i) // Remove duplicates
 };
 
-const EMBEDDINGS_TABLE_NAME = 'arcs_rules_embeddings_v2';
+const EMBEDDINGS_TABLE_NAME = 'arcs_rules_embeddings';
 const PROCESSING_BATCH_SIZE = 5; // Reduced for Free plan limits
 
 // Initialize Supabase client
