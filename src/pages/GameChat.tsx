@@ -29,8 +29,48 @@ interface SourcesListProps {
 }
 
 const SourcesList = ({ sources, onSourceClick, closeTooltip }: SourcesListProps) => {
-  // Group sources by bookName (source document)
-  const sourcesByBook = sources.reduce((acc, source) => {
+  // Step 1: Deduplicate card sources before grouping
+  const deduplicatedSources = sources.reduce((acc, source) => {
+    if (source.contentType === 'rule') {
+      const ruleSource = source as RuleSource;
+      const cardMatch = ruleSource.title.match(/^(.+?)\s*\(ID:\s*([^)]+)\)$/);
+      
+      if (cardMatch) {
+        // This is a card source - check for duplicates
+        const cardName = cardMatch[1];
+        
+        const existingIndex = acc.findIndex(s => {
+          if (s.contentType === 'rule') {
+            const existingMatch = (s as RuleSource).title.match(/^(.+?)\s*\(ID:\s*([^)]+)\)$/);
+            return existingMatch && existingMatch[1] === cardName;
+          }
+          return false;
+        });
+        
+        if (existingIndex !== -1) {
+          // Duplicate found - prefer base game over expansion
+          const existing = acc[existingIndex] as RuleSource;
+          const isCurrentBaseGame = ruleSource.bookName.includes('Base Game');
+          const isExistingBaseGame = existing.bookName.includes('Base Game');
+          
+          if (isCurrentBaseGame && !isExistingBaseGame) {
+            acc[existingIndex] = source; // Replace expansion with base game
+          }
+          // Otherwise keep existing (base game preferred, or first expansion if no base game)
+        } else {
+          acc.push(source); // No duplicate, add it
+        }
+      } else {
+        acc.push(source); // Not a card, add it
+      }
+    } else {
+      acc.push(source); // Not a rule, add it
+    }
+    return acc;
+  }, [] as Source[]);
+
+  // Step 2: Group deduplicated sources by bookName (source document)
+  const sourcesByBook = deduplicatedSources.reduce((acc, source) => {
     const bookName = source.contentType === 'rule' ? (source as RuleSource).bookName : 
                      source.contentType === 'card' ? (source as CardSource).cardName : 'Other';
     
