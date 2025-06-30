@@ -1,6 +1,5 @@
-# Card Reference
 
-## Base Game Cards
+# Base Game Cards
 
 ## 2 Player Frontiers (ID: ARCS-2SETUP01)
 

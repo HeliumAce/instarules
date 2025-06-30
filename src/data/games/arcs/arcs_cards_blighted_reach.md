@@ -1,6 +1,4 @@
-# Card Reference
-
-## Blighted Reach Cards
+# The Blighted Reach Cards
 
 ## Imperial Council in Session (ID: ARCS-AID01A)
 

@@ -1,8 +1,8 @@
-# The Blighted Reach Expansion Rules
+# The Blighted Reach Rules
 
 ## Page 1
 
-# ARCS (Page 1)
+## ARCS (Page 1)
 
 ## THE BLIGHTED REACH EXPANSION (Page 1)
 

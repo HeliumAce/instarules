@@ -1,6 +1,4 @@
-# Card Reference
-
-## Leaders and Lore
+# Leaders and Lore Cards
 
 ## Predictive Sensors (ID: ARCS-L15)
 

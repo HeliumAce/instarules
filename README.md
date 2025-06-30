@@ -51,7 +51,6 @@ Create a `.env` file in the root directory with the following variables:
 # For backend scripts (dotenv reads these into process.env)
 SUPABASE_URL=your_supabase_url_here
 SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key_here
-OPENAI_API_KEY=your_openai_api_key_here
 
 # Keep these for your Vite frontend (Vite reads these into import.meta.env)
 VITE_SUPABASE_URL=your_supabase_url_here
@@ -63,7 +62,6 @@ To get these values:
 - Create a Supabase account and project at [supabase.com](https://supabase.com)
 - Navigate to Project Settings > API
 - Copy the URL, anon/public key, and service role key
-- Get an OpenAI API key from [platform.openai.com](https://platform.openai.com/api-keys)
 - Get an OpenRouter API key from [openrouter.ai](https://openrouter.ai/)
 
 4. Start the development server:
@@ -131,11 +129,11 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ## Text Embeddings and Game Rules
 
-Instarules uses OpenAI embeddings to provide semantic search capabilities for game rules:
+Instarules uses Supabase native embeddings to provide semantic search capabilities for game rules:
 
 1. Rules are stored in Markdown format in the `src/data/games` directory.
-2. The backend ingestion script processes these rules and generates embeddings.
-3. The embeddings are stored in the Supabase database for efficient semantic search.
+2. The Supabase Edge Functions process these rules and generate embeddings using the `Supabase/gte-small` model.
+3. The embeddings are stored in the Supabase database with pgvector for efficient semantic search.
 
 To ingest game rules and generate embeddings:
 
@@ -146,5 +144,5 @@ npm run ingest
 This will:
 1. Read the Markdown rule files
 2. Process them into semantic chunks
-3. Generate OpenAI embeddings for each chunk
+3. Generate Supabase native embeddings (384-dimensional vectors) for each chunk
 4. Store the content and embeddings in the Supabase database
