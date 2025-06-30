@@ -69,17 +69,65 @@ const SourcesList = ({ sources, onSourceClick, closeTooltip }: SourcesListProps)
     return acc;
   }, [] as Source[]);
 
-  // Step 2: Group deduplicated sources by bookName (source document)
-  const sourcesByBook = deduplicatedSources.reduce((acc, source) => {
-    const bookName = source.contentType === 'rule' ? (source as RuleSource).bookName : 
-                     source.contentType === 'card' ? (source as CardSource).cardName : 'Other';
+  // Step 2: Categorize and group sources by content type, then by base game priority
+  const categorizedSources = deduplicatedSources.reduce((acc, source) => {
+    let category = 'Other';
+    let bookName = 'Other';
     
-    if (!acc[bookName]) {
-      acc[bookName] = [];
+    if (source.contentType === 'rule') {
+      const ruleSource = source as RuleSource;
+      bookName = ruleSource.bookName;
+      
+      // Categorize based on bookName patterns
+      if (bookName.toLowerCase().includes('cards')) {
+        category = 'Cards';
+      } else if (bookName.toLowerCase().includes('faq')) {
+        category = 'FAQ';  
+      } else if (bookName.toLowerCase().includes('rules')) {
+        category = 'Rules';
+      } else {
+        category = 'Other';
+      }
+    } else if (source.contentType === 'card') {
+      category = 'Cards';
+      bookName = (source as CardSource).cardName;
+    } else {
+      category = 'Other';
     }
-    acc[bookName].push(source);
+    
+    if (!acc[category]) {
+      acc[category] = {};
+    }
+    if (!acc[category][bookName]) {
+      acc[category][bookName] = [];
+    }
+    acc[category][bookName].push(source);
     return acc;
-  }, {} as Record<string, Source[]>);
+  }, {} as Record<string, Record<string, Source[]>>);
+
+  // Step 3: Sort categories and books within categories (Base Game first)
+  const categoryOrder = ['Rules', 'Cards', 'FAQ', 'Other'];
+  const sortedCategories = categoryOrder.filter(cat => categorizedSources[cat]);
+  
+  const sourcesByBook: Record<string, Source[]> = {};
+  
+  sortedCategories.forEach(category => {
+    const books = Object.keys(categorizedSources[category]);
+    
+    // Sort books within category: Base Game first, then alphabetically
+    const sortedBooks = books.sort((a, b) => {
+      const aIsBaseGame = a.toLowerCase().includes('base game');
+      const bIsBaseGame = b.toLowerCase().includes('base game');
+      
+      if (aIsBaseGame && !bIsBaseGame) return -1;
+      if (!aIsBaseGame && bIsBaseGame) return 1;
+      return a.localeCompare(b);
+    });
+    
+    sortedBooks.forEach(bookName => {
+      sourcesByBook[bookName] = categorizedSources[category][bookName];
+    });
+  });
 
   const handleClick = (source: Source) => {
     // Call the onSourceClick handler
