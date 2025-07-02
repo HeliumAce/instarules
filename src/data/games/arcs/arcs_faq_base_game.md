@@ -159,3 +159,14 @@ As a result, the Outrage in step 1 does not discard cards you gain from steps 2 
 ### Replace
 
 Some cards let you **replace** a piece (p.22). This **removes** a piece and also **places** another piece in the same system. You cannot **replace** if the targeted piece cannot be removed or if the corresponding supply to place a piece from is empty. The new piece keeps the same fresh or damaged state as the old piece.
+
+## Additional FAQ
+
+**Q:** When you provoke outrage via a card do you still ransack the court?
+**A:** No. Provoking outrage and ransacking the court are seperate actions. Unless explicitly stated, you do not ransack the court when provoking outrage with a card.
+
+**Q:** After provoking outrage with the ransack the court it says secure a card with any number of the defenders agents. If the defender has no agents on any cards in the court does the attacker still get to take a card?
+**A:** No. The attacker can only secure a card from the court if it has a least one of the defenders agents on it. If the defender has no agents on any card, the attacker does not get to secure a card from the court.
+
+**Q:** Is it possible to tax cities on a flagship in order to gain resources and captives?
+**A:** No. Cities placed on flagships can't be taxed as they are not built on a resource producing planet.
