@@ -58,7 +58,7 @@ const FILE_GROUPS = {
 };
 
 const EMBEDDINGS_TABLE_NAME = 'arcs_rules_embeddings';
-const PROCESSING_BATCH_SIZE = 5; // Reduced for Free plan limits
+const PROCESSING_BATCH_SIZE = 20; // Reduced for Free plan limits
 
 // Initialize Supabase client
 const supabaseUrl = process.env.SUPABASE_URL;
