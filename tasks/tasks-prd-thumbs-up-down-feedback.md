@@ -5,6 +5,7 @@ Based on: `prd-thumbs-up-down-feedback.md`
 ## Relevant Files
 
 - `supabase/migrations/20250713120000_create_user_feedback_table.sql` - Migration file for user_feedback table (user_id is nullable, feedback is retained/anonymized if user is deleted)
+- `project-docs/migrations-history.md` - Documentation of migration baselining and best practices
 - `src/pages/GameChat.tsx` - Main chat component where thumbs up/down icons exist and need to be updated for filled state and feedback logic.
 - `src/components/ui/FeedbackToast.tsx` - New component for thumbs down feedback toast with radio button options (to be created).
 - `src/components/ui/FeedbackToast.test.tsx` - Unit tests for FeedbackToast component.
@@ -34,8 +35,8 @@ Based on: `prd-thumbs-up-down-feedback.md`
   - [x] 1.6 Create database indexes for performance (user_id, game_id, created_at, message_id)
   - [x] 1.7 Enable Row Level Security (RLS) on user_feedback table
   - [x] 1.8 Create basic RLS policies (INSERT policy for authenticated users, SELECT policy for service_role/admin access)
-  - [ ] 1.9 Test migration by running supabase db reset locally
-  - [ ] 1.10 Deploy migration to production using supabase db push
+  - [x] 1.9 Test migration by running supabase db reset locally
+  - [x] 1.10 Deploy migration to production using supabase db push
 
 - [ ] 2.0 UI Component Updates for Feedback Icons
   - [ ] 2.1 Update existing thumbs up/down buttons in GameChat.tsx to show filled state when selected
