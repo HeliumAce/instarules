@@ -568,16 +568,36 @@ const GameChat = () => {
                                   title="Helpful"
                                   onClick={() => handleFeedback(message.id, 'thumbsUp')}
                                   aria-pressed={messageFeedback[message.id] === 'thumbsUp'}
+                                  aria-label="Mark this response as helpful"
                                 >
-                                  <ThumbsUp size={16} className="text-muted-foreground transition-colors hover:text-foreground" />
+                                  <ThumbsUp 
+                                    size={16} 
+                                    className={cn(
+                                      "transition-colors",
+                                      messageFeedback[message.id] === 'thumbsUp'
+                                        ? "text-muted-foreground hover:text-foreground"
+                                        : "text-muted-foreground hover:text-foreground"
+                                    )}
+                                    fill={messageFeedback[message.id] === 'thumbsUp' ? "currentColor" : "none"}
+                                  />
                                 </button>
                                 <button 
                                   className="p-1.5 transition-colors active:scale-95"
                                   title="Not helpful"
                                   onClick={() => handleFeedback(message.id, 'thumbsDown')}
                                   aria-pressed={messageFeedback[message.id] === 'thumbsDown'}
+                                  aria-label="Mark this response as not helpful"
                                 >
-                                  <ThumbsDown size={16} className="text-muted-foreground transition-colors hover:text-foreground" />
+                                  <ThumbsDown 
+                                    size={16} 
+                                    className={cn(
+                                      "transition-colors",
+                                      messageFeedback[message.id] === 'thumbsDown'
+                                        ? "text-muted-foreground hover:text-foreground"
+                                        : "text-muted-foreground hover:text-foreground"
+                                    )}
+                                    fill={messageFeedback[message.id] === 'thumbsDown' ? "currentColor" : "none"}
+                                  />
                                 </button>
                                 <div className="w-px h-full bg-muted/20"></div>
                                 <button 

@@ -39,13 +39,12 @@ Based on: `prd-thumbs-up-down-feedback.md`
   - [x] 1.10 Deploy migration to production using supabase db push
 
 - [ ] 2.0 UI Component Updates for Feedback Icons
-  - [ ] 2.1 Update existing thumbs up/down buttons in GameChat.tsx to show filled state when selected
-  - [ ] 2.2 Add proper ARIA labels and accessibility attributes to thumbs up/down buttons
-  - [ ] 2.3 Implement visual feedback for icon state changes (filled vs outline)
-  - [ ] 2.4 Add hover states for filled icons (mirror existing outline hover states) and active states for better user experience
-  - [ ] 2.5 Ensure mobile responsiveness for thumbs up/down buttons
-  - [ ] 2.6 Update existing handleFeedback function to work with new feedback system
-  - [ ] 2.7 Add loading states during feedback submission (if needed)
+  - [x] 2.1 Update existing thumbs up/down buttons in GameChat.tsx to show filled state when selected
+  - [x] 2.2 Add proper ARIA labels and accessibility attributes to thumbs up/down buttons
+  - [x] 2.3 Implement visual feedback for icon state changes (filled vs outline)
+  - [x] 2.4 Add hover states for filled icons (mirror existing outline hover states) and active states for better user experience
+  - [x] 2.5 Ensure mobile responsiveness for thumbs up/down buttons
+  - [x] 2.6 Update existing handleFeedback function to work with new feedback system
 
 - [ ] 3.0 Toast Notification System Implementation
   - [ ] 3.1 Create FeedbackToast component for thumbs down feedback collection
@@ -70,8 +69,9 @@ Based on: `prd-thumbs-up-down-feedback.md`
   - [ ] 4.8 Add feedback state to existing message state management
   - [ ] 4.9 Implement optimistic UI updates for immediate feedback
   - [ ] 4.10 Add error handling for network failures during feedback submission
-  - [ ] 4.11 Create unit tests for FeedbackService
-  - [ ] 4.12 Create unit tests for useFeedback hook
+  - [ ] 4.11 Add loading states during feedback submission (moved from Task 2.7)
+  - [ ] 4.12 Create unit tests for FeedbackService
+  - [ ] 4.13 Create unit tests for useFeedback hook
 
 - [ ] 5.0 Integration Testing and Validation
   - [ ] 5.1 Test complete thumbs up flow (click → icon fill → toast → auto-dismiss)
