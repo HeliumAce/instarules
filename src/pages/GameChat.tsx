@@ -14,6 +14,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useToast } from "@/components/ui/use-toast";
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
+import { FeedbackToastContent, type FeedbackReason } from '@/components/ui/FeedbackToast';
 
 // Define empty sources data locally
 const emptySourcesData: MessageSources = {
@@ -305,6 +306,7 @@ const GameChat = () => {
   const { rulesQuery, askMutation, getFallbackResponse } = useGameRules(gameId || '');
   const { messages, loading: messagesLoading, error: messagesError, saveMessage, clearMessages } = useChatMessages(gameId || '');
   const [messageFeedback, setMessageFeedback] = useState<Record<string, 'thumbsUp' | 'thumbsDown' | null>>({});
+  // Removed feedbackReason state - now managed internally by FeedbackToastContent
 
   useEffect(() => {
     scrollToBottom();
@@ -444,15 +446,58 @@ const GameChat = () => {
   };
 
   const handleFeedback = (messageId: string, type: 'thumbsUp' | 'thumbsDown') => {
+    const currentFeedback = messageFeedback[messageId];
+    const isDeselecting = currentFeedback === type;
+    
     setMessageFeedback(prev => {
-      if (prev[messageId] === type) {
+      if (isDeselecting) {
         const newFeedback = { ...prev };
         delete newFeedback[messageId];
         return newFeedback;
       }
       return { ...prev, [messageId]: type };
     });
-    console.log(`Message ${messageId} feedback: ${type}`);
+    
+    // Only show toast when selecting feedback, not when deselecting
+    if (!isDeselecting) {
+      if (type === 'thumbsUp') {
+        toast({
+          title: "Thank you for your feedback!",
+          description: "Your feedback helps us improve our responses.",
+        });
+      } else if (type === 'thumbsDown') {
+        toast({
+          title: "Help us improve",
+          description: <FeedbackToastContent 
+            onSubmit={(reason) => handleFeedbackSubmission(messageId, reason)}
+            onClose={() => {/* Cleanup handled by component */}}
+            isSubmitting={false}
+          />,
+          duration: Infinity // Disable auto-dismiss for thumbs down toast
+        });
+      }
+    }
+  };
+
+  const handleFeedbackSubmission = (messageId: string, reason: FeedbackReason) => {
+    try {
+      // TODO: Implement actual feedback submission to database
+      // For now, just show confirmation toast
+      
+      // Show confirmation toast
+      toast({
+        title: "Thank you for your feedback!",
+        description: "Your feedback helps us improve our responses."
+      });
+    } catch (error) {
+      // Handle error cases
+      console.error('Error submitting feedback:', error);
+      toast({
+        title: "Error submitting feedback",
+        description: "Please try again. If the problem persists, contact support.",
+        variant: "destructive"
+      });
+    }
   };
 
   const isRulesLoading = rulesQuery.isLoading;

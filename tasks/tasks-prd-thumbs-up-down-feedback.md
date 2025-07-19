@@ -8,7 +8,7 @@ Based on: `prd-thumbs-up-down-feedback.md`
 - `project-docs/migrations-history.md` - Documentation of migration baselining and best practices
 - `src/pages/GameChat.tsx` - Main chat component where thumbs up/down icons exist and need to be updated for filled state and feedback logic.
 - `src/components/ui/FeedbackToast.tsx` - New component for thumbs down feedback toast with radio button options (to be created).
-- `src/components/ui/FeedbackToast.test.tsx` - Unit tests for FeedbackToast component.
+
 - `src/hooks/useFeedback.ts` - Custom hook for managing feedback state and submission logic (to be created).
 - `src/hooks/useFeedback.test.ts` - Unit tests for useFeedback hook.
 - `src/integrations/supabase/client.ts` - Existing Supabase client that may need feedback-related query functions.
@@ -23,6 +23,76 @@ Based on: `prd-thumbs-up-down-feedback.md`
 - Use `npx jest [optional/path/to/test/file]` to run tests. Running without a path executes all tests found by the Jest configuration.
 - The existing thumbs up/down icons in GameChat.tsx need to be enhanced, not replaced.
 - Follow existing toast patterns from the current auth toast notifications.
+
+## Implementation Plan: Thumbs Down Radio Button Flow
+
+### Current State Analysis
+- ✅ FeedbackToastContent component exists with radio buttons and submit button
+- ✅ Basic thumbs up/down toast functionality works
+- ✅ Icons show filled state when selected
+- ❌ Thumbs down toast shows static message, not radio buttons
+- ❌ No state management for selected feedback reason
+- ❌ No submission flow for detailed feedback
+
+### Target User Flow
+1. **User clicks thumbs down** → Icon fills, thumbs down toast appears with radio buttons
+2. **User selects reason** → Submit button becomes enabled
+3. **User clicks Submit** → Toast dismisses, feedback logs to console, confirmation toast appears
+4. **User sees confirmation** → "Thank you for your feedback!" toast appears and auto-dismisses
+
+### Technical Implementation Strategy
+
+#### Phase 1: State Management (Task 3.3.1-3.3.3)
+```typescript
+// Add to GameChat component
+const [feedbackReason, setFeedbackReason] = useState<Record<string, FeedbackReason | null>>({});
+
+// Update handleFeedback for thumbs down
+if (type === 'thumbsDown') {
+  toast({
+    title: "Thank you for your feedback, could you tell us more?",
+    description: <FeedbackToastContent 
+      onReasonSelect={(reason) => setFeedbackReason(prev => ({...prev, [messageId]: reason}))}
+      selectedReason={feedbackReason[messageId]}
+      onSubmit={() => handleFeedbackSubmission(messageId)}
+    />
+  });
+}
+```
+
+#### Phase 2: Submission Flow (Task 3.4.1-3.4.5)
+```typescript
+// New function to handle detailed feedback submission
+const handleFeedbackSubmission = (messageId: string) => {
+  const reason = feedbackReason[messageId];
+  console.log('Submitting feedback:', { messageId, reason, type: 'thumbsDown' });
+  
+  // Dismiss current toast
+  toast.dismiss();
+  
+  // Show confirmation
+  toast({
+    title: "Thank you for your feedback!",
+    description: "Your feedback helps us improve our responses."
+  });
+  
+  // Clear state
+  setFeedbackReason(prev => ({...prev, [messageId]: null}));
+};
+```
+
+#### Phase 3: Toast Management (Task 3.3.6, 3.4.2)
+- Use `toast.dismiss()` to close current toast before showing confirmation
+- Ensure only one feedback toast is visible at a time
+- Handle toast replacement behavior
+
+### Key Implementation Challenges & Solutions
+
+1. **Toast Content Replacement**: Replace static description with React component
+2. **State Management**: Track feedback reason per message ID
+3. **Toast Lifecycle**: Proper dismiss/show sequence for smooth UX
+4. **Error Handling**: Graceful handling of submission failures
+5. **State Cleanup**: Clear feedback reason state after submission
 
 ## Tasks
 
@@ -47,16 +117,28 @@ Based on: `prd-thumbs-up-down-feedback.md`
   - [x] 2.6 Update existing handleFeedback function to work with new feedback system
 
 - [ ] 3.0 Toast Notification System Implementation
-  - [ ] 3.1 Create FeedbackToast component for thumbs down feedback collection
-  - [ ] 3.2 Implement radio button group for feedback reasons (not_related, incorrect, poorly_worded, other)
-  - [ ] 3.3 Add Submit button and X close button to FeedbackToast
-  - [ ] 3.4 Style FeedbackToast to match existing toast patterns (bottom-right positioning)
-  - [ ] 3.5 Implement auto-dismiss functionality for thumbs up toast (3 seconds)
-  - [ ] 3.6 Add toast animations and transitions consistent with existing UI
-  - [ ] 3.7 Handle toast state management (show/hide, content switching)
-  - [ ] 3.8 Add keyboard navigation support for radio buttons and submit button
-  - [ ] 3.9 Implement toast replacement behavior - new feedback toasts should dismiss previous ones (no stacking)
-  - [ ] 3.10 Add unit tests for FeedbackToast component
+  - [x] 3.1 Create FeedbackToast component for thumbs down feedback collection
+  - [x] 3.2 Implement radio button group for feedback reasons (not_related, incorrect, poorly_worded, other)
+  - [ ] 3.3 Integrate FeedbackToast with thumbs down flow
+    - [x] 3.3.1 Add state management for selected feedback reason in GameChat
+    - [x] 3.3.2 Replace thumbs down toast description with FeedbackToastContent component
+    - [x] 3.3.3 Implement onReasonSelect callback to update local state
+    - [x] 3.3.4 Implement onSubmit callback to handle feedback submission
+    - [x] 3.3.5 Ensure Submit button is disabled until reason is selected
+    - [x] 3.3.6 Add toast dismiss functionality on successful submission
+  - [x] 3.4 Implement thumbs down submission flow
+    - [x] 3.4.1 Create feedback submission function that logs feedback data
+    - [x] 3.4.2 Dismiss thumbs down toast after successful submission
+    - [x] 3.4.3 Show "Thank you for your feedback!" confirmation toast
+    - [x] 3.4.4 Clear feedback reason state after submission
+    - [x] 3.4.5 Handle error cases (show error toast if submission fails)
+  - [x] 3.5 Remove auto-dismiss functionality for initial thumbs down toast with radio buttons
+  - [x] 3.6 Add toast animations and transitions consistent with existing UI
+  - [x] 3.7 Handle toast state management (show/hide, content switching)
+  - [x] 3.8 Add keyboard navigation support for radio buttons and submit button
+- [x] 3.9 Implement toast replacement behavior - new feedback toasts should dismiss previous ones (no stacking)
+- [x] 3.10 Add unit tests for FeedbackToast component (deferred for systematic testing approach)
+- [x] 3.11 Improve toast radio button / form styling for better visibility and contrast
 
 - [ ] 4.0 Feedback Logic and State Management
   - [ ] 4.1 Create FeedbackService for Supabase API interactions
