@@ -91,7 +91,7 @@ export class FeedbackService {
   }
 
   /**
-   * Get feedback for a specific message (for checking existing feedback)
+   * Get existing feedback for a message
    */
   static async getFeedbackForMessage(messageId: string, userId?: string): Promise<FeedbackSubmissionResponse> {
     try {
@@ -99,48 +99,50 @@ export class FeedbackService {
         .from('user_feedback')
         .select('*')
         .eq('message_id', messageId)
-        .eq('user_id', userId)
+        .eq('user_id', userId || null)
         .single();
 
       if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
-        throw error;
+        throw new Error(`Database error: ${error.message}`);
       }
-
-      if (!data) {
-        return {
-          success: true,
-          data: null // No feedback exists for this message
-        };
-      }
-
-      // Convert to application format
-      const userFeedback = {
-        id: data.id,
-        gameId: data.game_id,
-        feedbackType: data.feedback_type,
-        userQuestion: data.user_question,
-        messageId: data.message_id,
-        feedbackReason: data.feedback_reason,
-        responseConfidence: data.response_confidence,
-        responseLength: data.response_length,
-        userId: data.user_id,
-        sessionId: data.session_id,
-        createdAt: new Date(data.created_at),
-        updatedAt: new Date(data.updated_at)
-      };
 
       return {
         success: true,
-        data: userFeedback
+        data: data || null,
+        message: data ? 'Feedback found' : 'No feedback found'
       };
 
     } catch (error) {
       console.error('FeedbackService getFeedbackForMessage failed:', error);
-      
+      throw error;
+    }
+  }
+
+  /**
+   * Get all feedback for a specific game and user
+   */
+  static async getFeedbackForGame(gameId: string, userId?: string): Promise<FeedbackSubmissionResponse> {
+    try {
+      const { data, error } = await supabase
+        .from('user_feedback')
+        .select('*')
+        .eq('game_id', gameId)
+        .eq('user_id', userId || null)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        throw new Error(`Database error: ${error.message}`);
+      }
+
       return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Unknown error occurred'
+        success: true,
+        data: data || [],
+        message: data ? `${data.length} feedback records found` : 'No feedback found'
       };
+
+    } catch (error) {
+      console.error('FeedbackService getFeedbackForGame failed:', error);
+      throw error;
     }
   }
 

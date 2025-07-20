@@ -167,14 +167,14 @@ const handleFeedbackSubmission = (messageId: string, reason: FeedbackReason) => 
     - [x] 4.2.2 Implement feedback submission logic using UPSERT pattern (INSERT ... ON CONFLICT DO UPDATE) with proper error handling
     - [x] 4.2.3 Update handleFeedbackSubmission in GameChat to collect and pass all required data to FeedbackService
   - [ ] 4.3 **State Management and Hooks**
-    - [ ] 4.3.1 Create useFeedback hook for managing feedback state across components
-    - [ ] 4.3.2 Implement feedback state persistence (track which messages have feedback)
-    - [ ] 4.3.3 Add feedback state to existing message state management
-  - [ ] 4.4 **Enhanced User Experience**
-    - [ ] 4.4.1 Handle switching between thumbs up/down (clear previous feedback, show appropriate toast)
-    - [ ] 4.4.2 Implement optimistic UI updates for immediate feedback
-    - [ ] 4.4.3 Add loading states during feedback submission (moved from Task 2.7)
-    - [ ] 4.4.4 Add error handling for network failures during feedback submission
+    - [x] 4.3.1 Create useFeedback hook for managing feedback state across components
+    - [x] 4.3.2 Implement feedback state persistence (track which messages have feedback)
+    - [x] 4.3.3 Add feedback state to existing message state management
+  - [x] 4.4 **Enhanced User Experience**
+    - [x] 4.4.1 Handle switching between thumbs up/down (clear previous feedback, show appropriate toast)
+    - [x] 4.4.2 Implement optimistic UI updates for immediate feedback
+    - [x] 4.4.3 Add loading states during feedback submission (moved from Task 2.7)
+    - [x] 4.4.4 Add error handling for network failures during feedback submission
 
 - [ ] 5.0 Integration Testing and Validation
   - [ ] 5.1 Test complete thumbs up flow (click → icon fill → toast → auto-dismiss)

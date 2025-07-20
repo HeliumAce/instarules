@@ -16,6 +16,7 @@ import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { FeedbackToastContent, type FeedbackReason } from '@/components/ui/FeedbackToast';
 import { FeedbackService } from '@/services/FeedbackService';
+import { useFeedback } from '@/hooks/useFeedback';
 
 // Define empty sources data locally
 const emptySourcesData: MessageSources = {
@@ -332,7 +333,8 @@ const GameChat = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { rulesQuery, askMutation, getFallbackResponse } = useGameRules(gameId || '');
   const { messages, loading: messagesLoading, error: messagesError, saveMessage, clearMessages } = useChatMessages(gameId || '');
-  const [messageFeedback, setMessageFeedback] = useState<Record<string, 'thumbsUp' | 'thumbsDown' | null>>({});
+  // Use the useFeedback hook for centralized state management
+  const { feedbackState, submitFeedback, isLoading: feedbackLoading } = useFeedback(gameId || '');
   // Generate session ID once when component mounts
   const [sessionId] = useState(() => generateSessionId());
 
@@ -474,17 +476,8 @@ const GameChat = () => {
   };
 
   const handleFeedback = async (messageId: string, type: 'thumbsUp' | 'thumbsDown') => {
-    const currentFeedback = messageFeedback[messageId];
-    const isDeselecting = currentFeedback === type;
-    
-    setMessageFeedback(prev => {
-      if (isDeselecting) {
-        const newFeedback = { ...prev };
-        delete newFeedback[messageId];
-        return newFeedback;
-      }
-      return { ...prev, [messageId]: type };
-    });
+    const currentFeedback = feedbackState[messageId];
+    const isDeselecting = currentFeedback?.type === type;
     
     // Only show toast when selecting feedback, not when deselecting
     if (!isDeselecting) {
@@ -494,31 +487,14 @@ const GameChat = () => {
         const userMessage = findUserQuestionForMessage(messages, messageId);
         
         if (aiMessage && gameId) {
-          const feedbackData: FeedbackSubmissionData = {
-            gameId,
-            feedbackType: 'thumbs_up',
+          // Use the useFeedback hook for thumbs up with context data
+          await submitFeedback(messageId, 'thumbs_up', undefined, {
             userQuestion: userMessage?.content || '',
-            messageId,
-            feedbackReason: undefined, // No reason for thumbs up
             responseConfidence: aiMessage.confidence || undefined,
             responseLength: aiMessage.content.length,
-            userId: user?.id,
             sessionId
-          };
-          
-          // Submit feedback using FeedbackService
-          const result = await FeedbackService.submitFeedback(feedbackData);
-          
-          if (!result.success) {
-            console.error('Failed to submit thumbs up feedback:', result.error);
-            // Don't show error toast for thumbs up - just log it
-          }
+          });
         }
-        
-        toast({
-          title: "Thank you for your feedback!",
-          description: "Your feedback helps us improve our responses.",
-        });
       } else if (type === 'thumbsDown') {
         toast({
           title: "Help us improve",
@@ -535,32 +511,18 @@ const GameChat = () => {
 
   const handleFeedbackSubmission = async (messageId: string, reason: FeedbackReason) => {
     try {
-      // Find the AI message and corresponding user question
+      // Extract context data for thumbs down feedback
       const aiMessage = messages.find(msg => msg.id === messageId);
       const userMessage = findUserQuestionForMessage(messages, messageId);
       
-      if (!aiMessage || !gameId) {
-        throw new Error('Missing required data for feedback submission');
-      }
-      
-      // Extract all required context data
-      const feedbackData: FeedbackSubmissionData = {
-        gameId,
-        feedbackType: 'thumbs_down',
-        userQuestion: userMessage?.content || '',
-        messageId,
-        feedbackReason: reason,
-        responseConfidence: aiMessage.confidence || undefined,
-        responseLength: aiMessage.content.length,
-        userId: user?.id,
-        sessionId
-      };
-      
-      // Submit feedback using FeedbackService
-      const result = await FeedbackService.submitFeedback(feedbackData);
-      
-      if (!result.success) {
-        throw new Error(result.error || 'Failed to submit feedback');
+      if (aiMessage && gameId) {
+        // Use the useFeedback hook for thumbs down with context data
+        await submitFeedback(messageId, 'thumbs_down', reason, {
+          userQuestion: userMessage?.content || '',
+          responseConfidence: aiMessage.confidence || undefined,
+          responseLength: aiMessage.content.length,
+          sessionId
+        });
       }
       
       // Show confirmation toast
@@ -691,36 +653,36 @@ const GameChat = () => {
                                   className="p-1.5 transition-colors active:scale-95"
                                   title="Helpful"
                                   onClick={() => handleFeedback(message.id, 'thumbsUp')}
-                                  aria-pressed={messageFeedback[message.id] === 'thumbsUp'}
+                                  aria-pressed={feedbackState[message.id]?.type === 'thumbs_up'}
                                   aria-label="Mark this response as helpful"
                                 >
                                   <ThumbsUp 
                                     size={16} 
                                     className={cn(
                                       "transition-colors",
-                                      messageFeedback[message.id] === 'thumbsUp'
+                                      feedbackState[message.id]?.type === 'thumbs_up'
                                         ? "text-muted-foreground hover:text-foreground"
                                         : "text-muted-foreground hover:text-foreground"
                                     )}
-                                    fill={messageFeedback[message.id] === 'thumbsUp' ? "currentColor" : "none"}
+                                    fill={feedbackState[message.id]?.type === 'thumbs_up' ? "currentColor" : "none"}
                                   />
                                 </button>
                                 <button 
                                   className="p-1.5 transition-colors active:scale-95"
                                   title="Not helpful"
                                   onClick={() => handleFeedback(message.id, 'thumbsDown')}
-                                  aria-pressed={messageFeedback[message.id] === 'thumbsDown'}
+                                  aria-pressed={feedbackState[message.id]?.type === 'thumbs_down'}
                                   aria-label="Mark this response as not helpful"
                                 >
                                   <ThumbsDown 
                                     size={16} 
                                     className={cn(
                                       "transition-colors",
-                                      messageFeedback[message.id] === 'thumbsDown'
+                                      feedbackState[message.id]?.type === 'thumbs_down'
                                         ? "text-muted-foreground hover:text-foreground"
                                         : "text-muted-foreground hover:text-foreground"
                                     )}
-                                    fill={messageFeedback[message.id] === 'thumbsDown' ? "currentColor" : "none"}
+                                    fill={feedbackState[message.id]?.type === 'thumbs_down' ? "currentColor" : "none"}
                                   />
                                 </button>
                                 <div className="w-px h-full bg-muted/20"></div>
