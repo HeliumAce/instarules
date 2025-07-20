@@ -5,7 +5,7 @@ import ReactMarkdown from 'react-markdown';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { useGameContext } from '@/context/GameContext';
-import { Message, Source, MessageSources, RuleSource, CardSource } from '@/types/game';
+import { Message, Source, MessageSources, RuleSource, CardSource, FeedbackSubmissionData } from '@/types/game';
 import { useGameRules } from '@/hooks/useGameRules';
 import { useChatMessages } from '@/hooks/useChatMessages';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -14,11 +14,40 @@ import { useAuth } from '@/context/AuthContext';
 import { useToast } from "@/components/ui/use-toast";
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
+import { FeedbackToastContent, type FeedbackReason } from '@/components/ui/FeedbackToast';
+import { FeedbackService } from '@/services/FeedbackService';
+import { useFeedback } from '@/hooks/useFeedback';
 
 // Define empty sources data locally
 const emptySourcesData: MessageSources = {
   count: 0,
   sources: []
+};
+
+// Generate a unique session ID for this chat session
+const generateSessionId = (): string => {
+  // Generate a proper UUID v4 for database compatibility
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    const r = Math.random() * 16 | 0;
+    const v = c === 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+};
+
+// Helper function to find the user question that corresponds to an AI response
+const findUserQuestionForMessage = (messages: Message[], aiMessageId: string): Message | null => {
+  // Find the AI message
+  const aiMessageIndex = messages.findIndex(msg => msg.id === aiMessageId);
+  if (aiMessageIndex === -1) return null;
+  
+  // Look backwards from the AI message to find the most recent user message
+  for (let i = aiMessageIndex - 1; i >= 0; i--) {
+    if (messages[i].isUser) {
+      return messages[i];
+    }
+  }
+  
+  return null;
 };
 
 // Internal Sources components
@@ -304,7 +333,10 @@ const GameChat = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { rulesQuery, askMutation, getFallbackResponse } = useGameRules(gameId || '');
   const { messages, loading: messagesLoading, error: messagesError, saveMessage, clearMessages } = useChatMessages(gameId || '');
-  const [messageFeedback, setMessageFeedback] = useState<Record<string, 'thumbsUp' | 'thumbsDown' | null>>({});
+  // Use the useFeedback hook for centralized state management
+  const { feedbackState, submitFeedback, isLoading: feedbackLoading } = useFeedback(gameId || '');
+  // Generate session ID once when component mounts
+  const [sessionId] = useState(() => generateSessionId());
 
   useEffect(() => {
     scrollToBottom();
@@ -443,16 +475,70 @@ const GameChat = () => {
     }
   };
 
-  const handleFeedback = (messageId: string, type: 'thumbsUp' | 'thumbsDown') => {
-    setMessageFeedback(prev => {
-      if (prev[messageId] === type) {
-        const newFeedback = { ...prev };
-        delete newFeedback[messageId];
-        return newFeedback;
+  const handleFeedback = async (messageId: string, type: 'thumbsUp' | 'thumbsDown') => {
+    const currentFeedback = feedbackState[messageId];
+    const isDeselecting = currentFeedback?.type === type;
+    
+    // Only show toast when selecting feedback, not when deselecting
+    if (!isDeselecting) {
+      if (type === 'thumbsUp') {
+        // Extract context data for thumbs up feedback
+        const aiMessage = messages.find(msg => msg.id === messageId);
+        const userMessage = findUserQuestionForMessage(messages, messageId);
+        
+        if (aiMessage && gameId) {
+          // Use the useFeedback hook for thumbs up with context data
+          await submitFeedback(messageId, 'thumbs_up', undefined, {
+            userQuestion: userMessage?.content || '',
+            responseConfidence: aiMessage.confidence || undefined,
+            responseLength: aiMessage.content.length,
+            sessionId
+          });
+        }
+      } else if (type === 'thumbsDown') {
+        toast({
+          title: "Help us improve",
+          description: <FeedbackToastContent 
+            onSubmit={(reason) => handleFeedbackSubmission(messageId, reason)}
+            onClose={() => {/* Cleanup handled by component */}}
+            isSubmitting={false}
+          />,
+          duration: Infinity // Disable auto-dismiss for thumbs down toast
+        });
       }
-      return { ...prev, [messageId]: type };
-    });
-    console.log(`Message ${messageId} feedback: ${type}`);
+    }
+  };
+
+  const handleFeedbackSubmission = async (messageId: string, reason: FeedbackReason) => {
+    try {
+      // Extract context data for thumbs down feedback
+      const aiMessage = messages.find(msg => msg.id === messageId);
+      const userMessage = findUserQuestionForMessage(messages, messageId);
+      
+      if (aiMessage && gameId) {
+        // Use the useFeedback hook for thumbs down with context data
+        await submitFeedback(messageId, 'thumbs_down', reason, {
+          userQuestion: userMessage?.content || '',
+          responseConfidence: aiMessage.confidence || undefined,
+          responseLength: aiMessage.content.length,
+          sessionId
+        });
+      }
+      
+      // Show confirmation toast
+      toast({
+        title: "Thank you for your feedback!",
+        description: "Your feedback helps us improve our responses."
+      });
+    } catch (error) {
+      // Handle error cases
+      console.error('Error submitting feedback:', error);
+      toast({
+        title: "Error submitting feedback",
+        description: "Please try again. If the problem persists, contact support.",
+        variant: "destructive"
+      });
+    }
   };
 
   const isRulesLoading = rulesQuery.isLoading;
@@ -567,17 +653,37 @@ const GameChat = () => {
                                   className="p-1.5 transition-colors active:scale-95"
                                   title="Helpful"
                                   onClick={() => handleFeedback(message.id, 'thumbsUp')}
-                                  aria-pressed={messageFeedback[message.id] === 'thumbsUp'}
+                                  aria-pressed={feedbackState[message.id]?.type === 'thumbs_up'}
+                                  aria-label="Mark this response as helpful"
                                 >
-                                  <ThumbsUp size={16} className="text-muted-foreground transition-colors hover:text-foreground" />
+                                  <ThumbsUp 
+                                    size={16} 
+                                    className={cn(
+                                      "transition-colors",
+                                      feedbackState[message.id]?.type === 'thumbs_up'
+                                        ? "text-muted-foreground hover:text-foreground"
+                                        : "text-muted-foreground hover:text-foreground"
+                                    )}
+                                    fill={feedbackState[message.id]?.type === 'thumbs_up' ? "currentColor" : "none"}
+                                  />
                                 </button>
                                 <button 
                                   className="p-1.5 transition-colors active:scale-95"
                                   title="Not helpful"
                                   onClick={() => handleFeedback(message.id, 'thumbsDown')}
-                                  aria-pressed={messageFeedback[message.id] === 'thumbsDown'}
+                                  aria-pressed={feedbackState[message.id]?.type === 'thumbs_down'}
+                                  aria-label="Mark this response as not helpful"
                                 >
-                                  <ThumbsDown size={16} className="text-muted-foreground transition-colors hover:text-foreground" />
+                                  <ThumbsDown 
+                                    size={16} 
+                                    className={cn(
+                                      "transition-colors",
+                                      feedbackState[message.id]?.type === 'thumbs_down'
+                                        ? "text-muted-foreground hover:text-foreground"
+                                        : "text-muted-foreground hover:text-foreground"
+                                    )}
+                                    fill={feedbackState[message.id]?.type === 'thumbs_down' ? "currentColor" : "none"}
+                                  />
                                 </button>
                                 <div className="w-px h-full bg-muted/20"></div>
                                 <button 
