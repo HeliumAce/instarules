@@ -41,3 +41,43 @@ export interface MessageSources {
   count: number;
   sources: Source[];
 }
+
+// Feedback-related types for thumbs up/down feature
+export type FeedbackType = 'thumbs_up' | 'thumbs_down';
+
+export type FeedbackReason = 'not_related' | 'incorrect' | 'poorly_worded' | 'other';
+
+export interface UserFeedback {
+  id: string;
+  gameId: string;
+  feedbackType: FeedbackType;
+  userQuestion: string;
+  messageId: string;
+  feedbackReason?: FeedbackReason; // Optional, only for thumbs_down
+  responseConfidence?: string;
+  responseLength?: number;
+  userId?: string;
+  sessionId: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// Data structure for collecting feedback before submission
+export interface FeedbackSubmissionData {
+  gameId: string;
+  feedbackType: FeedbackType;
+  userQuestion: string;
+  messageId: string;
+  feedbackReason?: FeedbackReason;
+  responseConfidence?: string;
+  responseLength?: number;
+  userId?: string;
+  sessionId: string;
+}
+
+// Response from feedback submission operations
+export interface FeedbackSubmissionResponse {
+  success: boolean;
+  data?: UserFeedback;
+  error?: string;
+}

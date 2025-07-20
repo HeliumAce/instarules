@@ -13,7 +13,7 @@ Based on: `prd-thumbs-up-down-feedback.md`
 - `src/hooks/useFeedback.test.ts` - Unit tests for useFeedback hook.
 - `src/integrations/supabase/client.ts` - Existing Supabase client that may need feedback-related query functions.
 - `src/types/game.ts` - Existing types file that may need feedback-related type definitions.
-- `src/services/FeedbackService.ts` - Service for handling feedback API calls to Supabase (to be created).
+- `src/services/FeedbackService.ts` - Service for handling feedback API calls to Supabase with UPSERT pattern and error handling.
 - `src/services/FeedbackService.test.ts` - Unit tests for FeedbackService.
 - `src/hooks/use-toast.ts` - Existing toast hook that may need updates for feedback toasts.
 
@@ -30,9 +30,13 @@ Based on: `prd-thumbs-up-down-feedback.md`
 - ✅ FeedbackToastContent component exists with radio buttons and submit button
 - ✅ Basic thumbs up/down toast functionality works
 - ✅ Icons show filled state when selected
-- ❌ Thumbs down toast shows static message, not radio buttons
-- ❌ No state management for selected feedback reason
-- ❌ No submission flow for detailed feedback
+- ✅ Thumbs down toast shows radio buttons and reason selection
+- ✅ State management for selected feedback reason implemented
+- ✅ Submission flow for detailed feedback implemented (console logging)
+- ✅ **Task 4.1.1 Complete**: Supabase types generated for user_feedback table
+- ✅ **Task 4.1.2 Complete**: Feedback type definitions added to game.ts
+- ✅ **Task 4.1.3 Complete**: Full context data extraction implemented
+- 🔄 **Ready for Task 4.2.1**: All prerequisites complete - ready to create FeedbackService
 
 ### Target User Flow
 1. **User clicks thumbs down** → Icon fills, thumbs down toast appears with radio buttons
@@ -42,49 +46,62 @@ Based on: `prd-thumbs-up-down-feedback.md`
 
 ### Technical Implementation Strategy
 
-#### Phase 1: State Management (Task 3.3.1-3.3.3)
-```typescript
-// Add to GameChat component
-const [feedbackReason, setFeedbackReason] = useState<Record<string, FeedbackReason | null>>({});
+#### ✅ **Phase 1: UI Components (Completed - Tasks 2.0 & 3.0)**
+- Thumbs up/down icons with filled states ✅
+- FeedbackToastContent with radio buttons ✅ 
+- Toast management and user flow ✅
 
-// Update handleFeedback for thumbs down
-if (type === 'thumbsDown') {
-  toast({
-    title: "Thank you for your feedback, could you tell us more?",
-    description: <FeedbackToastContent 
-      onReasonSelect={(reason) => setFeedbackReason(prev => ({...prev, [messageId]: reason}))}
-      selectedReason={feedbackReason[messageId]}
-      onSubmit={() => handleFeedbackSubmission(messageId)}
-    />
-  });
+#### 🔄 **Phase 2: Backend Integration Prerequisites (Task 4.1)**
+```typescript
+// Task 4.1.1: Regenerate Supabase types
+npx supabase gen types typescript --local > src/integrations/supabase/types.ts
+
+// Task 4.1.2: Add feedback types to game.ts
+export interface UserFeedback {
+  id: string;
+  gameId: string;
+  feedbackType: 'thumbs_up' | 'thumbs_down';
+  userQuestion: string;
+  messageId: string;
+  feedbackReason?: 'not_related' | 'incorrect' | 'poorly_worded' | 'other';
+  responseConfidence?: string;
+  responseLength?: number;
+  userId?: string;
+  sessionId: string;
+  createdAt: Date;
+  updatedAt: Date;
 }
-```
 
-#### Phase 2: Submission Flow (Task 3.4.1-3.4.5)
-```typescript
-// New function to handle detailed feedback submission
-const handleFeedbackSubmission = (messageId: string) => {
-  const reason = feedbackReason[messageId];
-  console.log('Submitting feedback:', { messageId, reason, type: 'thumbsDown' });
+// Task 4.1.3: Extract context data in handleFeedbackSubmission
+const handleFeedbackSubmission = (messageId: string, reason: FeedbackReason) => {
+  const message = messages.find(m => m.id === messageId);
+  const userMessage = findUserQuestionForMessage(messageId);
   
-  // Dismiss current toast
-  toast.dismiss();
+  const feedbackData: UserFeedback = {
+    gameId,
+    feedbackType: 'thumbs_down',
+    userQuestion: userMessage?.content || '',
+    messageId,
+    feedbackReason: reason,
+    responseConfidence: message?.confidence,
+    responseLength: message?.content.length,
+    userId: user?.id,
+    sessionId: generateSessionId(), // TODO: Implement session tracking
+  };
   
-  // Show confirmation
-  toast({
-    title: "Thank you for your feedback!",
-    description: "Your feedback helps us improve our responses."
-  });
-  
-  // Clear state
-  setFeedbackReason(prev => ({...prev, [messageId]: null}));
+  // Pass to FeedbackService (Task 4.2.1)
 };
 ```
 
-#### Phase 3: Toast Management (Task 3.3.6, 3.4.2)
-- Use `toast.dismiss()` to close current toast before showing confirmation
-- Ensure only one feedback toast is visible at a time
-- Handle toast replacement behavior
+#### 📋 **Phase 3: Service Implementation (Task 4.2)**
+- FeedbackService with UPSERT pattern
+- Error handling and validation  
+- Integration with existing toast system
+
+#### 🎯 **Phase 4: Enhanced UX (Task 4.3-4.4)**
+- useFeedback hook for state management
+- Optimistic updates and loading states
+- Feedback switching and persistence
 
 ### Key Implementation Challenges & Solutions
 
@@ -141,19 +158,23 @@ const handleFeedbackSubmission = (messageId: string) => {
 - [x] 3.11 Improve toast radio button / form styling for better visibility and contrast
 
 - [ ] 4.0 Feedback Logic and State Management
-  - [ ] 4.1 Create FeedbackService for Supabase API interactions
-  - [ ] 4.2 Implement feedback submission logic using UPSERT pattern (INSERT ... ON CONFLICT DO UPDATE) with proper error handling
-  - [ ] 4.3 Create useFeedback hook for managing feedback state across components
-  - [ ] 4.4 Add feedback type definitions to game.ts types file
-  - [ ] 4.5 Implement feedback state persistence (track which messages have feedback)
-  - [ ] 4.6 Handle switching between thumbs up/down (clear previous feedback, show appropriate toast)
-  - [ ] 4.7 Extract context data (user_question, response_confidence, response_length, session_id) from existing message data
-  - [ ] 4.8 Add feedback state to existing message state management
-  - [ ] 4.9 Implement optimistic UI updates for immediate feedback
-  - [ ] 4.10 Add error handling for network failures during feedback submission
-  - [ ] 4.11 Add loading states during feedback submission (moved from Task 2.7)
-  - [ ] 4.12 Create unit tests for FeedbackService
-  - [ ] 4.13 Create unit tests for useFeedback hook
+  - [ ] 4.1 **Prerequisites for Backend Integration**
+      - [x] 4.1.1 Regenerate Supabase types to include user_feedback table schema (run `npx supabase gen types typescript --local > src/integrations/supabase/types.ts`)
+      - [x] 4.1.2 Add feedback type definitions to game.ts types file
+      - [x] 4.1.3 Extract context data (user_question, response_confidence, response_length, session_id) from existing message data in GameChat
+  - [x] 4.2 **Core Service Implementation**
+    - [x] 4.2.1 Create FeedbackService for Supabase API interactions with all required fields
+    - [x] 4.2.2 Implement feedback submission logic using UPSERT pattern (INSERT ... ON CONFLICT DO UPDATE) with proper error handling
+    - [x] 4.2.3 Update handleFeedbackSubmission in GameChat to collect and pass all required data to FeedbackService
+  - [ ] 4.3 **State Management and Hooks**
+    - [ ] 4.3.1 Create useFeedback hook for managing feedback state across components
+    - [ ] 4.3.2 Implement feedback state persistence (track which messages have feedback)
+    - [ ] 4.3.3 Add feedback state to existing message state management
+  - [ ] 4.4 **Enhanced User Experience**
+    - [ ] 4.4.1 Handle switching between thumbs up/down (clear previous feedback, show appropriate toast)
+    - [ ] 4.4.2 Implement optimistic UI updates for immediate feedback
+    - [ ] 4.4.3 Add loading states during feedback submission (moved from Task 2.7)
+    - [ ] 4.4.4 Add error handling for network failures during feedback submission
 
 - [ ] 5.0 Integration Testing and Validation
   - [ ] 5.1 Test complete thumbs up flow (click → icon fill → toast → auto-dismiss)

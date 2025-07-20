@@ -5,7 +5,7 @@ import ReactMarkdown from 'react-markdown';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { useGameContext } from '@/context/GameContext';
-import { Message, Source, MessageSources, RuleSource, CardSource } from '@/types/game';
+import { Message, Source, MessageSources, RuleSource, CardSource, FeedbackSubmissionData } from '@/types/game';
 import { useGameRules } from '@/hooks/useGameRules';
 import { useChatMessages } from '@/hooks/useChatMessages';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -15,11 +15,38 @@ import { useToast } from "@/components/ui/use-toast";
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { FeedbackToastContent, type FeedbackReason } from '@/components/ui/FeedbackToast';
+import { FeedbackService } from '@/services/FeedbackService';
 
 // Define empty sources data locally
 const emptySourcesData: MessageSources = {
   count: 0,
   sources: []
+};
+
+// Generate a unique session ID for this chat session
+const generateSessionId = (): string => {
+  // Generate a proper UUID v4 for database compatibility
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    const r = Math.random() * 16 | 0;
+    const v = c === 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+};
+
+// Helper function to find the user question that corresponds to an AI response
+const findUserQuestionForMessage = (messages: Message[], aiMessageId: string): Message | null => {
+  // Find the AI message
+  const aiMessageIndex = messages.findIndex(msg => msg.id === aiMessageId);
+  if (aiMessageIndex === -1) return null;
+  
+  // Look backwards from the AI message to find the most recent user message
+  for (let i = aiMessageIndex - 1; i >= 0; i--) {
+    if (messages[i].isUser) {
+      return messages[i];
+    }
+  }
+  
+  return null;
 };
 
 // Internal Sources components
@@ -306,7 +333,8 @@ const GameChat = () => {
   const { rulesQuery, askMutation, getFallbackResponse } = useGameRules(gameId || '');
   const { messages, loading: messagesLoading, error: messagesError, saveMessage, clearMessages } = useChatMessages(gameId || '');
   const [messageFeedback, setMessageFeedback] = useState<Record<string, 'thumbsUp' | 'thumbsDown' | null>>({});
-  // Removed feedbackReason state - now managed internally by FeedbackToastContent
+  // Generate session ID once when component mounts
+  const [sessionId] = useState(() => generateSessionId());
 
   useEffect(() => {
     scrollToBottom();
@@ -445,7 +473,7 @@ const GameChat = () => {
     }
   };
 
-  const handleFeedback = (messageId: string, type: 'thumbsUp' | 'thumbsDown') => {
+  const handleFeedback = async (messageId: string, type: 'thumbsUp' | 'thumbsDown') => {
     const currentFeedback = messageFeedback[messageId];
     const isDeselecting = currentFeedback === type;
     
@@ -461,6 +489,32 @@ const GameChat = () => {
     // Only show toast when selecting feedback, not when deselecting
     if (!isDeselecting) {
       if (type === 'thumbsUp') {
+        // Extract context data for thumbs up feedback
+        const aiMessage = messages.find(msg => msg.id === messageId);
+        const userMessage = findUserQuestionForMessage(messages, messageId);
+        
+        if (aiMessage && gameId) {
+          const feedbackData: FeedbackSubmissionData = {
+            gameId,
+            feedbackType: 'thumbs_up',
+            userQuestion: userMessage?.content || '',
+            messageId,
+            feedbackReason: undefined, // No reason for thumbs up
+            responseConfidence: aiMessage.confidence || undefined,
+            responseLength: aiMessage.content.length,
+            userId: user?.id,
+            sessionId
+          };
+          
+          // Submit feedback using FeedbackService
+          const result = await FeedbackService.submitFeedback(feedbackData);
+          
+          if (!result.success) {
+            console.error('Failed to submit thumbs up feedback:', result.error);
+            // Don't show error toast for thumbs up - just log it
+          }
+        }
+        
         toast({
           title: "Thank you for your feedback!",
           description: "Your feedback helps us improve our responses.",
@@ -479,10 +533,35 @@ const GameChat = () => {
     }
   };
 
-  const handleFeedbackSubmission = (messageId: string, reason: FeedbackReason) => {
+  const handleFeedbackSubmission = async (messageId: string, reason: FeedbackReason) => {
     try {
-      // TODO: Implement actual feedback submission to database
-      // For now, just show confirmation toast
+      // Find the AI message and corresponding user question
+      const aiMessage = messages.find(msg => msg.id === messageId);
+      const userMessage = findUserQuestionForMessage(messages, messageId);
+      
+      if (!aiMessage || !gameId) {
+        throw new Error('Missing required data for feedback submission');
+      }
+      
+      // Extract all required context data
+      const feedbackData: FeedbackSubmissionData = {
+        gameId,
+        feedbackType: 'thumbs_down',
+        userQuestion: userMessage?.content || '',
+        messageId,
+        feedbackReason: reason,
+        responseConfidence: aiMessage.confidence || undefined,
+        responseLength: aiMessage.content.length,
+        userId: user?.id,
+        sessionId
+      };
+      
+      // Submit feedback using FeedbackService
+      const result = await FeedbackService.submitFeedback(feedbackData);
+      
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to submit feedback');
+      }
       
       // Show confirmation toast
       toast({
