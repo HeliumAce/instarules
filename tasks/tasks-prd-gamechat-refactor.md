@@ -36,11 +36,11 @@ Based on PRD: `tasks/prd-gamechat-refactor.md`
 ## Tasks
 
 - [ ] 1.0 Set Up Testing Framework and Infrastructure
-  - [ ] 1.1 Install Vitest, React Testing Library, and related dependencies
-  - [ ] 1.2 Create `vitest.config.ts` configuration file with jsdom environment
-  - [ ] 1.3 Create `src/test/setup.ts` with global test setup and utilities
-  - [ ] 1.4 Add test scripts to `package.json` (test, test:watch, test:coverage)
-  - [ ] 1.5 Verify testing framework works with a simple test
+  - [x] 1.1 Install Vitest, React Testing Library, and related dependencies
+  - [x] 1.2 Create `vitest.config.ts` configuration file with jsdom environment
+  - [x] 1.3 Create `src/test/setup.ts` with global test setup and utilities
+  - [x] 1.4 Add test scripts to `package.json` (test, test:watch, test:coverage)
+  - [x] 1.5 Verify testing framework works with a simple test
 
 - [ ] 2.0 Fix Source Content Pipeline and Data Structures
   - [ ] 2.1 Update `BaseSource` interface in `src/types/game.ts` to include `content: string` field
