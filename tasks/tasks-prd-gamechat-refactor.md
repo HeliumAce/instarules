@@ -17,7 +17,7 @@ Based on PRD: `tasks/prd-gamechat-refactor.md`
 - `src/pages/GameChat/utils.test.ts` - Unit tests for utility functions
 - `src/pages/GameChat/hooks.ts` - GameChat-specific hooks (if needed)
 - `src/pages/GameChat/index.ts` - Clean exports for GameChat components
-- `src/pages/GameChat/SourceModal.tsx` - GameChat-specific modal for displaying rule content
+- `src/pages/GameChat/SourceModal.tsx` - GameChat-specific modal using existing Dialog component for displaying rule content
 - `src/pages/GameChat/SourceModal.test.tsx` - Unit tests for SourceModal component
 - `src/types/game.ts` - Update Source interface to include content field
 - `src/hooks/useGameRules.ts` - Fix convertToMessageSources function to preserve content
@@ -47,7 +47,7 @@ Based on PRD: `tasks/prd-gamechat-refactor.md`
 - [ ] 2.0 Fix Source Content Pipeline and Data Structures
   - [x] 2.1 Update `BaseSource` interface in `src/types/game.ts` to include `content: string` field
   - [x] 2.2 Modify `convertToMessageSources` function in `src/hooks/useGameRules.ts` to preserve `result.content`
-  - [x] 2.3 Create `src/components/ui/SourceModal.tsx` component for displaying rule content
+  - [x] 2.3 Create `src/pages/GameChat/SourceModal.tsx` component using existing Dialog for displaying rule content
   - [x] 2.4 Create unit tests for `SourceModal.tsx` component
   - [x] 2.5 Verify that sources now contain actual rule content from vector search results
 

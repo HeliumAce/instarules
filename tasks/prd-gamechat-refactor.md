@@ -35,7 +35,7 @@ The GameChat.tsx component has grown to 778 lines and violates the single respon
 2. Extract `SourcesList.tsx` component from lines 60-150 with enhanced content display capability
 3. Extract `FeedbackButtons.tsx` component from lines 650-690 with identical interaction behavior
 4. Extract `ChatInput.tsx` component from lines 730-778 with identical form submission behavior
-5. Create `SourceModal.tsx` component to display full rule content when sources are clicked
+5. Create `SourceModal.tsx` component using existing Dialog component to display full rule content when sources are clicked
 6. Consolidate utility functions into `utils.ts` file (generateSessionId, findUserQuestionForMessage)
 7. Create GameChat-specific hooks file for any extracted hook logic
 
@@ -50,7 +50,7 @@ The GameChat.tsx component has grown to 778 lines and violates the single respon
 13. Update Source interface to include `content` field for displaying actual rule text
 14. Modify `convertToMessageSources` function to preserve content from vector search results
 15. Replace source click AI response behavior with direct content modal display
-16. Ensure source modal displays formatted rule content using ReactMarkdown
+16. Ensure source modal displays formatted rule content using ReactMarkdown and existing Dialog component
 
 ### Code Quality Requirements
 17. Maintain identical CSS classes, styling, and interactive behavior across all extracted components
@@ -85,7 +85,7 @@ src/pages/
     └── index.ts                 # Clean exports
 
 src/components/ui/               # Only truly reusable components
-└── SourceModal.tsx              # Reusable modal component
+└── (existing Dialog component)  # Use existing Dialog for SourceModal
 ```
 
 ### Component Interface Design
