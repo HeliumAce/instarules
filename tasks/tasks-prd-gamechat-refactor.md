@@ -60,7 +60,7 @@ Based on PRD: `tasks/prd-gamechat-refactor.md`
 
 - [ ] 4.0 Extract React Components with Identical Behavior
   - [x] 4.1 Extract `MessageItem` component from lines 615-700 with identical rendering
-  - [ ] 4.2 Create unit tests for `MessageItem` focusing on user behavior (content display, interactions)
+  - [x] 4.2 Create unit tests for `MessageItem` focusing on user behavior (content display, interactions)
   - [ ] 4.3 Extract `SourcesList` component from lines 60-150 with source modal integration
   - [ ] 4.4 Create unit tests for `SourcesList` focusing on user behavior (source clicks, content display)
   - [ ] 4.5 Extract `FeedbackButtons` component from lines 650-690 with identical interaction behavior
