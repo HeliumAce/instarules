@@ -51,12 +51,12 @@ Based on PRD: `tasks/prd-gamechat-refactor.md`
   - [x] 2.4 Create unit tests for `SourceModal.tsx` component
   - [x] 2.5 Verify that sources now contain actual rule content from vector search results
 
-- [ ] 3.0 Extract Utility Functions and Create Supporting Files
-  - [ ] 3.1 Create `src/pages/GameChat/utils.ts` and extract `generateSessionId` function
-  - [ ] 3.2 Extract `findUserQuestionForMessage` function to `utils.ts`
-  - [ ] 3.3 Create focused unit tests for both utility functions in `utils.test.ts`
-  - [ ] 3.4 Create `src/pages/GameChat/index.ts` with clean exports
-  - [ ] 3.5 Update imports in `GameChat.tsx` to use extracted utilities
+- [x] 3.0 Extract Utility Functions and Create Supporting Files
+  - [x] 3.1 Create `src/pages/GameChat/utils.ts` and extract `generateSessionId` function
+  - [x] 3.2 Extract `findUserQuestionForMessage` function to `utils.ts`
+  - [x] 3.3 Create focused unit tests for both utility functions in `utils.test.ts`
+  - [x] 3.4 Create `src/pages/GameChat/index.ts` with clean exports
+  - [x] 3.5 Update imports in `GameChat.tsx` to use extracted utilities
 
 - [ ] 4.0 Extract React Components with Identical Behavior
   - [ ] 4.1 Extract `MessageItem` component from lines 615-700 with identical rendering

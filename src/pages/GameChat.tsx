@@ -17,37 +17,12 @@ import { Badge } from '@/components/ui/badge';
 import { FeedbackToastContent, type FeedbackReason } from '@/components/ui/FeedbackToast';
 import { FeedbackService } from '@/services/FeedbackService';
 import { useFeedback } from '@/hooks/useFeedback';
+import { generateSessionId, findUserQuestionForMessage } from './GameChat/utils';
 
 // Define empty sources data locally
 const emptySourcesData: MessageSources = {
   count: 0,
   sources: []
-};
-
-// Generate a unique session ID for this chat session
-const generateSessionId = (): string => {
-  // Generate a proper UUID v4 for database compatibility
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-    const r = Math.random() * 16 | 0;
-    const v = c === 'x' ? r : (r & 0x3 | 0x8);
-    return v.toString(16);
-  });
-};
-
-// Helper function to find the user question that corresponds to an AI response
-const findUserQuestionForMessage = (messages: Message[], aiMessageId: string): Message | null => {
-  // Find the AI message
-  const aiMessageIndex = messages.findIndex(msg => msg.id === aiMessageId);
-  if (aiMessageIndex === -1) return null;
-  
-  // Look backwards from the AI message to find the most recent user message
-  for (let i = aiMessageIndex - 1; i >= 0; i--) {
-    if (messages[i].isUser) {
-      return messages[i];
-    }
-  }
-  
-  return null;
 };
 
 // Internal Sources components
