@@ -41,10 +41,10 @@ The GameChat.tsx component has grown to 778 lines and violates the single respon
 
 ### Testing Requirements
 8. Implement Vitest testing framework with React Testing Library
-9. Create comprehensive unit tests for utility functions (generateSessionId, findUserQuestionForMessage)
-10. Create component tests for extracted components focusing on user interactions
+9. Create focused unit tests for utility functions (generateSessionId, findUserQuestionForMessage)
+10. Create component tests focusing on user behavior and interactions, not implementation details
 11. Create integration tests to ensure refactored components work together correctly
-12. Maintain visual consistency through snapshot testing where appropriate
+12. Test user behavior, not internal implementation or edge cases that don't affect users
 
 ### Bug Fix Requirements  
 13. Update Source interface to include `content` field for displaying actual rule text
@@ -100,7 +100,8 @@ src/components/ui/               # Only truly reusable components
 - Configure Vitest with jsdom environment for React component testing
 - Add React Testing Library for user-behavior focused testing
 - Create test utilities and setup files for consistent testing patterns
-- Integrate testing into development workflow
+- Focus on testing user behavior and interactions, not implementation details
+- Avoid testing edge cases that don't affect user experience
 
 ### Source Content Pipeline Fix
 - Extend BaseSource interface to include content field
@@ -127,6 +128,7 @@ src/components/ui/               # Only truly reusable components
 ### Phase 1: Testing Foundation & Utilities (1-2 commits)
 - Set up Vitest testing framework and configuration
 - Extract and test utility functions (generateSessionId, findUserQuestionForMessage)
+- Focus on user behavior testing, not implementation details
 - Validate utilities work correctly in isolation
 
 ### Phase 2: Source Content Pipeline Fix (2-3 commits)  

@@ -17,8 +17,8 @@ Based on PRD: `tasks/prd-gamechat-refactor.md`
 - `src/pages/GameChat/utils.test.ts` - Unit tests for utility functions
 - `src/pages/GameChat/hooks.ts` - GameChat-specific hooks (if needed)
 - `src/pages/GameChat/index.ts` - Clean exports for GameChat components
-- `src/components/ui/SourceModal.tsx` - Reusable modal for displaying rule content
-- `src/components/ui/SourceModal.test.tsx` - Unit tests for SourceModal component
+- `src/pages/GameChat/SourceModal.tsx` - GameChat-specific modal for displaying rule content
+- `src/pages/GameChat/SourceModal.test.tsx` - Unit tests for SourceModal component
 - `src/types/game.ts` - Update Source interface to include content field
 - `src/hooks/useGameRules.ts` - Fix convertToMessageSources function to preserve content
 - `vitest.config.ts` - Vitest testing configuration
@@ -31,7 +31,9 @@ Based on PRD: `tasks/prd-gamechat-refactor.md`
 - Use `npm run test` to run all tests, `npm run test:watch` for watch mode
 - Maintain identical CSS classes and behavior when extracting components
 - Each extracted component should have identical props interface to current implementation
-- Focus on user behavior testing rather than implementation details
+- **Testing Philosophy**: Focus on user behavior and interactions, not implementation details
+- **Test What Matters**: User can see content, click buttons, submit forms, etc.
+- **Avoid Overkill**: Don't test edge cases, CSS classes, or internal implementation
 
 ## Tasks
 
@@ -43,28 +45,28 @@ Based on PRD: `tasks/prd-gamechat-refactor.md`
   - [x] 1.5 Verify testing framework works with a simple test
 
 - [ ] 2.0 Fix Source Content Pipeline and Data Structures
-  - [ ] 2.1 Update `BaseSource` interface in `src/types/game.ts` to include `content: string` field
-  - [ ] 2.2 Modify `convertToMessageSources` function in `src/hooks/useGameRules.ts` to preserve `result.content`
-  - [ ] 2.3 Create `src/components/ui/SourceModal.tsx` component for displaying rule content
-  - [ ] 2.4 Create unit tests for `SourceModal.tsx` component
-  - [ ] 2.5 Verify that sources now contain actual rule content from vector search results
+  - [x] 2.1 Update `BaseSource` interface in `src/types/game.ts` to include `content: string` field
+  - [x] 2.2 Modify `convertToMessageSources` function in `src/hooks/useGameRules.ts` to preserve `result.content`
+  - [x] 2.3 Create `src/components/ui/SourceModal.tsx` component for displaying rule content
+  - [x] 2.4 Create unit tests for `SourceModal.tsx` component
+  - [x] 2.5 Verify that sources now contain actual rule content from vector search results
 
 - [ ] 3.0 Extract Utility Functions and Create Supporting Files
   - [ ] 3.1 Create `src/pages/GameChat/utils.ts` and extract `generateSessionId` function
   - [ ] 3.2 Extract `findUserQuestionForMessage` function to `utils.ts`
-  - [ ] 3.3 Create comprehensive unit tests for both utility functions in `utils.test.ts`
+  - [ ] 3.3 Create focused unit tests for both utility functions in `utils.test.ts`
   - [ ] 3.4 Create `src/pages/GameChat/index.ts` with clean exports
   - [ ] 3.5 Update imports in `GameChat.tsx` to use extracted utilities
 
 - [ ] 4.0 Extract React Components with Identical Behavior
   - [ ] 4.1 Extract `MessageItem` component from lines 615-700 with identical rendering
-  - [ ] 4.2 Create unit tests for `MessageItem` focusing on user interactions and rendering
+  - [ ] 4.2 Create unit tests for `MessageItem` focusing on user behavior (content display, interactions)
   - [ ] 4.3 Extract `SourcesList` component from lines 60-150 with source modal integration
-  - [ ] 4.4 Create unit tests for `SourcesList` including source click behavior
+  - [ ] 4.4 Create unit tests for `SourcesList` focusing on user behavior (source clicks, content display)
   - [ ] 4.5 Extract `FeedbackButtons` component from lines 650-690 with identical interaction behavior
-  - [ ] 4.6 Create unit tests for `FeedbackButtons` covering thumbs up/down functionality
+  - [ ] 4.6 Create unit tests for `FeedbackButtons` focusing on user behavior (thumbs up/down clicks)
   - [ ] 4.7 Extract `ChatInput` component from lines 730-778 with identical form submission
-  - [ ] 4.8 Create unit tests for `ChatInput` covering Enter key submission and form validation
+  - [ ] 4.8 Create unit tests for `ChatInput` focusing on user behavior (form submission, input handling)
   - [ ] 4.9 Update `GameChat.tsx` to use all extracted components with identical props
 
 - [ ] 5.0 Integration, Testing, and Final Validation

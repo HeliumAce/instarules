@@ -19,6 +19,7 @@ export interface BaseSource {
   id: string;
   contentType: 'rule' | 'card' | 'faq' | 'errata';
   title: string;
+  content: string; // Actual rule content for display in modal
 }
 
 export interface RuleSource extends BaseSource {
