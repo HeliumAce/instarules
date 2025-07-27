@@ -61,10 +61,10 @@ Based on PRD: `tasks/prd-gamechat-refactor.md`
 - [ ] 4.0 Extract React Components with Identical Behavior
   - [x] 4.1 Extract `MessageItem` component from lines 615-700 with identical rendering
   - [x] 4.2 Create unit tests for `MessageItem` focusing on user behavior (content display, interactions)
-  - [ ] 4.3 Extract `SourcesList` component from lines 60-150 with source modal integration
-  - [ ] 4.4 Create unit tests for `SourcesList` focusing on user behavior (source clicks, content display)
-  - [ ] 4.5 Extract `FeedbackButtons` component from lines 650-690 with identical interaction behavior
-  - [ ] 4.6 Create unit tests for `FeedbackButtons` focusing on user behavior (thumbs up/down clicks)
+  - [x] 4.3 Extract `SourcesList` component from lines 60-150 with source modal integration
+  - [x] 4.4 Create unit tests for `SourcesList` focusing on user behavior (source clicks, content display)
+  - [x] 4.5 Extract `FeedbackButtons` component from lines 650-690 with identical interaction behavior
+  - [x] 4.6 Create unit tests for `FeedbackButtons` focusing on user behavior (thumbs up/down clicks)
   - [ ] 4.7 Extract `ChatInput` component from lines 730-778 with identical form submission
   - [ ] 4.8 Create unit tests for `ChatInput` focusing on user behavior (form submission, input handling)
   - [ ] 4.9 Update `GameChat.tsx` to use all extracted components with identical props

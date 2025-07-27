@@ -1,8 +1,8 @@
 import ReactMarkdown from 'react-markdown';
-import { ThumbsUp, ThumbsDown, Pencil } from 'lucide-react';
 import { Message, MessageSources } from '@/types/game';
 import { cn } from '@/lib/utils';
 import { SourcesToggle } from './SourcesToggle';
+import { FeedbackButtons } from './FeedbackButtons';
 
 interface MessageItemProps {
   message: Message;
@@ -51,61 +51,12 @@ export function MessageItem({
                 />
               )}
 
-              <div className="flex items-center gap-2">
-                <div className="flex -space-x-px">
-                  <button 
-                    className="p-1.5 transition-colors active:scale-95"
-                    title="Helpful"
-                    onClick={() => onFeedback(message.id, 'thumbsUp')}
-                    aria-pressed={feedbackState[message.id]?.type === 'thumbs_up'}
-                    aria-label="Mark this response as helpful"
-                  >
-                    <ThumbsUp 
-                      size={16} 
-                      className={cn(
-                        "transition-colors",
-                        feedbackState[message.id]?.type === 'thumbs_up'
-                          ? "text-muted-foreground hover:text-foreground"
-                          : "text-muted-foreground hover:text-foreground"
-                      )}
-                      fill={feedbackState[message.id]?.type === 'thumbs_up' ? "currentColor" : "none"}
-                    />
-                  </button>
-                  <button 
-                    className="p-1.5 transition-colors active:scale-95"
-                    title="Not helpful"
-                    onClick={() => onFeedback(message.id, 'thumbsDown')}
-                    aria-pressed={feedbackState[message.id]?.type === 'thumbs_down'}
-                    aria-label="Mark this response as not helpful"
-                  >
-                    <ThumbsDown 
-                      size={16} 
-                      className={cn(
-                        "transition-colors",
-                        feedbackState[message.id]?.type === 'thumbs_down'
-                          ? "text-muted-foreground hover:text-foreground"
-                          : "text-muted-foreground hover:text-foreground"
-                      )}
-                      fill={feedbackState[message.id]?.type === 'thumbs_down' ? "currentColor" : "none"}
-                    />
-                  </button>
-                  <div className="w-px h-full bg-muted/20"></div>
-                  <button 
-                    className="p-1.5 transition-colors active:scale-95"
-                    title="Edit this question"
-                    onClick={() => console.log('Edit clicked')}
-                  >
-                    <Pencil size={16} className="text-muted-foreground transition-colors hover:text-foreground" />
-                  </button>
-                </div>
-                
-                {/* Confidence score indicator */}
-                {message.confidence && (
-                  <span className="text-sm text-muted-foreground">
-                    {message.confidence} confidence
-                  </span>
-                )}
-              </div>
+              <FeedbackButtons
+                messageId={message.id}
+                feedbackState={feedbackState}
+                onFeedback={onFeedback}
+                confidence={message.confidence}
+              />
             </div>
           </>
         )}
