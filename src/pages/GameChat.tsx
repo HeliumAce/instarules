@@ -19,6 +19,7 @@ import { FeedbackService } from '@/services/FeedbackService';
 import { useFeedback } from '@/hooks/useFeedback';
 import { generateSessionId, findUserQuestionForMessage } from './GameChat/utils';
 import { MessageItem } from './GameChat/MessageItem';
+import { SourceModal } from './GameChat/SourceModal';
 
 // Define empty sources data locally
 const emptySourcesData: MessageSources = {
@@ -37,6 +38,8 @@ const GameChat = () => {
   const [input, setInput] = useState('');
   const [isClearing, setIsClearing] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
+  const [selectedSource, setSelectedSource] = useState<Source | null>(null);
+  const [isSourceModalOpen, setIsSourceModalOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { rulesQuery, askMutation, getFallbackResponse } = useGameRules(gameId || '');
   const { messages, loading: messagesLoading, error: messagesError, saveMessage, clearMessages } = useChatMessages(gameId || '');
@@ -57,56 +60,10 @@ const GameChat = () => {
     return <Navigate to="/auth" />;
   }
 
-  const handleSourceClick = async (source: Source) => {
+  const handleSourceClick = (source: Source) => {
     console.log('Source clicked:', source);
-    
-    // Create formatted source reference as user message
-    let userMessage = '';
-    
-    if (source.contentType === 'rule') {
-      const ruleSource = source as RuleSource;
-      // Check if this is a card source (title contains "(ID: ")
-      const cardMatch = ruleSource.title.match(/^(.+?)\s*\(ID:\s*([^)]+)\)$/);
-      if (cardMatch) {
-        // Format: "Card Name, ID: XXX"
-        userMessage = `${cardMatch[1]}, ID: ${cardMatch[2]}`;
-      } else {
-        // Format: "Heading, Rulebook p.XX"
-        userMessage = `${ruleSource.sourceHeading}, Rulebook p.${ruleSource.pageNumber || '?'}`;
-      }
-    } else if (source.contentType === 'card') {
-      // Format: "Card Name, ID: XXX"
-      const cardSource = source as CardSource;
-      userMessage = `${cardSource.cardName}, ID: ${cardSource.cardId}`;
-    } else {
-      // Fallback
-      userMessage = `${source.title}`;
-    }
-    
-    // Save as user message
-    await saveMessage(userMessage, true);
-    
-    // Set typing indicator
-    setIsTyping(true);
-    
-    // Create chat history from existing messages
-    const chatHistory = messages.slice(-6).map(msg => ({
-      content: msg.content,
-      isUser: msg.isUser
-    }));
-    
-    // Trigger AI to respond to this source query
-    askMutation.mutate(
-      { 
-        question: userMessage,
-        chatHistory: chatHistory.length > 0 ? chatHistory : undefined,
-        skipFollowUpHandling: true // Explicitly skip follow-up handling for source selections to treat them as fresh queries
-      },
-      {
-        onSuccess: handleMutationSuccess,
-        onError: handleMutationError,
-      }
-    );
+    setSelectedSource(source);
+    setIsSourceModalOpen(true);
   };
 
   const scrollToBottom = () => {
@@ -389,6 +346,16 @@ const GameChat = () => {
           </div>
         </form>
       </footer>
+      
+      {/* Source Modal */}
+      <SourceModal
+        source={selectedSource}
+        isOpen={isSourceModalOpen}
+        onClose={() => {
+          setIsSourceModalOpen(false);
+          setSelectedSource(null);
+        }}
+      />
     </div>
   );
 };
