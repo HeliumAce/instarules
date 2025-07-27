@@ -20,6 +20,7 @@ import { useFeedback } from '@/hooks/useFeedback';
 import { generateSessionId, findUserQuestionForMessage } from './GameChat/utils';
 import { MessageItem } from './GameChat/MessageItem';
 import { SourceModal } from './GameChat/SourceModal';
+import { ChatInput } from './GameChat/ChatInput';
 
 // Define empty sources data locally
 const emptySourcesData: MessageSources = {
@@ -308,44 +309,15 @@ const GameChat = () => {
         </div>
       </div>
 
-      <footer className="bg-background pt-1 pb-3 px-4">
-        <form onSubmit={handleSubmit} className="mx-auto max-w-3xl">
-          <div className="relative">
-            <Textarea
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => {
-                // Submit form on Enter key press without Shift key
-                if (e.key === 'Enter' && !e.shiftKey) {
-                  e.preventDefault();
-                  if (input.trim() && !isAsking && !isRulesLoading && !isRulesError && rulesQuery.data) {
-                    handleSubmit(e);
-                  }
-                }
-              }}
-              placeholder={
-                isRulesLoading ? "Loading rules..." 
-                : isAsking ? "Processing your question..." 
-                : "Ask about rules, setup, or gameplay..."
-              }
-              className="flex-1 bg-muted text-foreground pr-12 h-[130px] resize-none rounded-md"
-              disabled={isAsking || isRulesLoading || isRulesError || !rulesQuery.data}
-            />
-            <Button 
-              type="submit" 
-              disabled={isAsking || isRulesLoading || isRulesError || !input.trim() || !rulesQuery.data}
-              className="absolute top-2 right-2 p-2 h-auto"
-              variant="ghost"
-            >
-              {isAsking ? (
-                <Loader2 size={18} className="animate-spin" />
-              ) : (
-                <SendHorizontal size={18} />
-              )}
-            </Button>
-          </div>
-        </form>
-      </footer>
+      <ChatInput
+        input={input}
+        setInput={setInput}
+        onSubmit={handleSubmit}
+        isAsking={isAsking}
+        isRulesLoading={isRulesLoading}
+        isRulesError={isRulesError}
+        rulesQueryData={rulesQuery.data}
+      />
       
       {/* Source Modal */}
       <SourceModal

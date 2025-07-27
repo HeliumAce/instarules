@@ -65,9 +65,9 @@ Based on PRD: `tasks/prd-gamechat-refactor.md`
   - [x] 4.4 Create unit tests for `SourcesList` focusing on user behavior (source clicks, content display)
   - [x] 4.5 Extract `FeedbackButtons` component from lines 650-690 with identical interaction behavior
   - [x] 4.6 Create unit tests for `FeedbackButtons` focusing on user behavior (thumbs up/down clicks)
-  - [ ] 4.7 Extract `ChatInput` component from lines 730-778 with identical form submission
-  - [ ] 4.8 Create unit tests for `ChatInput` focusing on user behavior (form submission, input handling)
-  - [ ] 4.9 Update `GameChat.tsx` to use all extracted components with identical props
+  - [x] 4.7 Extract `ChatInput` component from lines 730-778 with identical form submission
+  - [x] 4.8 Create unit tests for `ChatInput` focusing on user behavior (form submission, input handling)
+  - [x] 4.9 Update `GameChat.tsx` to use all extracted components with identical props
 
 - [ ] 5.0 Integration, Testing, and Final Validation
   - [ ] 5.1 Run comprehensive integration tests to ensure all components work together
