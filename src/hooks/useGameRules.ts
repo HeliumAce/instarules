@@ -326,7 +326,8 @@ function convertToMessageSources(results: VectorSearchResult[]): MessageSources 
         contentType: 'card',
         title: cardName || 'Card',
         cardId: cardId || '',
-        cardName: cardName || 'Card'
+        cardName: cardName || 'Card',
+        content: result.content // Preserve the actual content for display
       } as CardSource;
     } else {
       // Extract enhanced metadata from the v2 schema
@@ -404,7 +405,8 @@ function convertToMessageSources(results: VectorSearchResult[]): MessageSources 
         bookName: bookName,
         headings: metadata.headings || [],
         sourceHeading: sourceHeading || 'General Rules',
-        pageNumber: pageNumber
+        pageNumber: pageNumber,
+        content: result.content // Preserve the actual content for display
       } as RuleSource;
     }
   });
