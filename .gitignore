@@ -32,3 +32,6 @@ project-docs
 
 #Temp files
 supabase/.temp/
+
+# Test coverage reports
+coverage/

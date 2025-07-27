@@ -125,30 +125,61 @@ src/components/ui/               # Only truly reusable components
 
 ## Implementation Phases
 
-### Phase 1: Testing Foundation & Utilities (1-2 commits)
+### Phase 1: Testing Foundation & Utilities (1-2 commits) ✅ **COMPLETED**
 - Set up Vitest testing framework and configuration
 - Extract and test utility functions (generateSessionId, findUserQuestionForMessage)
 - Focus on user behavior testing, not implementation details
 - Validate utilities work correctly in isolation
 
-### Phase 2: Source Content Pipeline Fix (2-3 commits)  
+### Phase 2: Source Content Pipeline Fix (2-3 commits) ✅ **COMPLETED**
 - Update Source interface to include content field
 - Fix convertToMessageSources to preserve content from vector search
 - Create and test SourceModal component
 - Validate source content is available for display
 
-### Phase 3: Component Extraction (4-5 commits)
+### Phase 3: Component Extraction (4-5 commits) ✅ **COMPLETED**
 - Extract MessageItem component with tests
 - Extract SourcesList component with fixed click behavior and tests
 - Extract FeedbackButtons component with tests  
 - Extract ChatInput component with tests
 - Validate each component works identically to original
 
-### Phase 4: Integration & Cleanup (1-2 commits)
+### Phase 4: Integration & Cleanup (1-2 commits) ✅ **COMPLETED**
 - Update main GameChat.tsx to use extracted components
 - Run comprehensive integration testing
 - Remove any remaining duplicate code
 - Final validation of complete functionality
+
+### Phase 2: Business Logic Extraction & Single Responsibility **[FUTURE PROJECT]**
+
+**Current Status**: GameChat.tsx reduced from 778 to 310 lines but still violates single responsibility principle.
+
+**Analysis**: The component currently acts as both an orchestrator AND contains complex business logic:
+- 141 lines of event handlers (45% of remaining code)
+- Complex mutation success/error handling
+- Detailed feedback submission workflows  
+- Chat history management logic
+- API state coordination
+
+**Goal**: Extract business logic into custom hooks to achieve true single responsibility as a "conductor, not the orchestra."
+
+**Proposed Custom Hooks**:
+1. **`useChatHandlers`** - Extract form submission, feedback, and source click logic
+2. **`useChatState`** - Consolidate modal state, typing indicators, and derived state
+3. **`useChatAPI`** - Handle mutation success/error patterns and API coordination
+4. **`useChatSession`** - Manage session ID, chat history, and persistence logic
+
+**Expected Outcome**: 
+- GameChat.tsx reduced to ~120-150 lines focused purely on coordination
+- Business logic properly tested in isolation
+- Enhanced maintainability and debugging capabilities
+- Clear separation between UI orchestration and business logic
+
+**Technical Considerations**:
+- Maintain identical external behavior and performance
+- Preserve existing hook patterns and data flows
+- Focus on logical grouping of related functionality
+- Ensure custom hooks are testable and reusable
 
 ## Open Questions
 

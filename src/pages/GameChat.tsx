@@ -1,21 +1,16 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useParams, Navigate } from 'react-router-dom';
-import { SendHorizontal, Loader2, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
-import ReactMarkdown from 'react-markdown';
-import { Textarea } from '@/components/ui/textarea';
+import { Loader2, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useGameContext } from '@/context/GameContext';
-import { Message, Source, MessageSources, RuleSource, CardSource, FeedbackSubmissionData } from '@/types/game';
+import { Message, Source, MessageSources } from '@/types/game';
 import { useGameRules } from '@/hooks/useGameRules';
 import { useChatMessages } from '@/hooks/useChatMessages';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { ReloadIcon } from '@radix-ui/react-icons';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from "@/components/ui/use-toast";
-import { cn } from '@/lib/utils';
-import { Badge } from '@/components/ui/badge';
 import { FeedbackToastContent, type FeedbackReason } from '@/components/ui/FeedbackToast';
-import { FeedbackService } from '@/services/FeedbackService';
 import { useFeedback } from '@/hooks/useFeedback';
 import { generateSessionId, findUserQuestionForMessage } from './GameChat/utils';
 import { MessageItem } from './GameChat/MessageItem';
@@ -210,28 +205,8 @@ const GameChat = () => {
   const isRulesError = rulesQuery.isError;
   const isAsking = askMutation.isPending;
   const rulesErrorMessage = rulesQuery.error?.message;
-  const askErrorMessage = askMutation.error?.message;
 
-  const renderMessageFooter = (message: Message) => {
-    // Always show sources for AI messages
-    if (!message.isUser) {
-      return (
-        <div className="flex justify-between items-center text-xs text-slate-500 mt-2">
-          {message.confidence && (
-            <div className="flex items-center gap-1">
-              <CircleIcon className="w-2 h-2" />
-              <span>{message.confidence} confidence</span>
-            </div>
-          )}
-          <SourcesToggle 
-            sources={message.sources || emptySourcesData} 
-            onSourceClick={handleSourceClick}
-          />
-        </div>
-      );
-    }
-    return null;
-  };
+
 
   return (
     <div className="flex h-screen flex-col">
@@ -331,9 +306,5 @@ const GameChat = () => {
     </div>
   );
 };
-
-function cn(...classes: (string | boolean | undefined)[]) {
-  return classes.filter(Boolean).join(' ');
-}
 
 export default GameChat;
