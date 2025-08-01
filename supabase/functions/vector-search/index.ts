@@ -4,7 +4,7 @@ import { serve } from "https://deno.land/std@0.177.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 // Define required types
-interface ArcsRuleSearchResult {
+interface VectorSearchResult {
   id: string;
   content: string;
   metadata: Record<string, any>;
@@ -130,7 +130,7 @@ serve(async (req) => {
       console.log(`RPC function returned ${Array.isArray(searchData) ? searchData.length : 0} results.`);
 
       // Ensure data is an array before returning
-      const results = Array.isArray(searchData) ? searchData as ArcsRuleSearchResult[] : [];
+      const results = Array.isArray(searchData) ? searchData as VectorSearchResult[] : [];
 
       // 4. Return the results with enhanced metadata
       console.log(`After dynamic threshold, final results count: ${Array.isArray(searchData) ? searchData.length : 0}`);

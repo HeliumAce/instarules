@@ -5,6 +5,7 @@ import { preprocessQuery, classifyQuery, detectFollowUp, expandQueryByType } fro
 import { extractEntitiesFromHistory, rankEntitiesByRelevance } from '@/services/EntityExtractionService';
 import { gameResponses } from '@/data/games';
 import { useSupabase } from '@/context/SupabaseContext';
+import { VectorSearchResult } from '@/types/search';
 
 // Define the structure for the data returned by the rules query
 interface GameRulesData {
@@ -12,13 +13,7 @@ interface GameRulesData {
   rules: any;
 }
 
-// Define the structure for vector search results (matches the service function)
-interface VectorSearchResult {
-  id: string;
-  content: string;
-  metadata: Record<string, any>;
-  similarity: number;
-}
+// VectorSearchResult type now imported from centralized types
 
 // Define the structure for the variables passed to the mutation
 interface AskQuestionVariables {
