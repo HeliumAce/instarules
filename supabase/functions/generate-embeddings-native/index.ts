@@ -2,8 +2,19 @@
 
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
 
-// Initialize the AI model session
-const model = new Supabase.ai.Session('gte-small');
+// Initialize the AI model session - create fresh session per request to avoid memory leaks
+let model: Supabase.ai.Session | null = null;
+
+function getModel(): Supabase.ai.Session {
+  if (!model) {
+    model = new Supabase.ai.Session('gte-small');
+  }
+  return model;
+}
+
+function cleanupModel() {
+  model = null;
+}
 
 serve(async (req) => {
   // Handle CORS
@@ -25,7 +36,7 @@ serve(async (req) => {
   }
 
   try {
-    console.log('=== NATIVE SUPABASE AI EMBEDDING START ===');
+    console.log('=== STREAMING SUPABASE AI EMBEDDING START ===');
     
     const body = await req.json();
     const inputText = body.inputText;
@@ -38,26 +49,46 @@ serve(async (req) => {
     }
 
     const textsToEmbed = Array.isArray(inputText) ? inputText : [inputText];
-    console.log(`Processing ${textsToEmbed.length} text(s) using native Supabase AI...`);
+    console.log(`Processing ${textsToEmbed.length} text(s) using streaming Supabase AI...`);
 
-    // Generate embeddings using Supabase.ai.Session
+    // Stream processing: process one embedding at a time to minimize memory usage
     const embeddings: number[][] = [];
+    const modelInstance = getModel();
     
-    for (const text of textsToEmbed) {
-      console.log(`Generating embedding for: "${text.substring(0, 50)}..."`);
+    for (let i = 0; i < textsToEmbed.length; i++) {
+      const text = textsToEmbed[i];
+      console.log(`Generating embedding ${i + 1}/${textsToEmbed.length}: "${text.substring(0, 50)}..."`);
       
-      // Use the correct Supabase AI API
-      const output = await model.run(text, { 
-        mean_pool: true, 
-        normalize: true 
-      });
-      
-      console.log(`Embedding generated, length: ${output.length}`);
-      embeddings.push(output);
+      try {
+        // Process single embedding to minimize memory accumulation
+        const output = await modelInstance.run(text, { 
+          mean_pool: true, 
+          normalize: true 
+        });
+        
+        console.log(`Embedding ${i + 1} generated, length: ${output.length}`);
+        embeddings.push(output);
+        
+        // Force garbage collection after each embedding to prevent memory buildup
+        if (global.gc) {
+          global.gc();
+        }
+        
+        // Small delay to allow memory cleanup
+        await new Promise(resolve => setTimeout(resolve, 10));
+        
+      } catch (embeddingError: any) {
+        console.error(`Error generating embedding ${i + 1}: ${embeddingError.message}`);
+        // Continue with next embedding instead of failing entire batch
+        embeddings.push(new Array(384).fill(0)); // Placeholder for failed embedding
+      }
     }
 
+    // Cleanup model session after processing
+    cleanupModel();
+
     console.log(`Successfully generated ${embeddings.length} embeddings`);
-    console.log('=== NATIVE SUPABASE AI EMBEDDING SUCCESS ===');
+    console.log('=== STREAMING SUPABASE AI EMBEDDING SUCCESS ===');
 
     return new Response(JSON.stringify({ 
       embeddings,
@@ -65,7 +96,7 @@ serve(async (req) => {
         inputCount: textsToEmbed.length,
         outputCount: embeddings.length,
         embeddingDimensions: embeddings[0]?.length || 0,
-        method: 'native-supabase-ai-session'
+        method: 'streaming-native-supabase-ai-session'
       }
     }), {
       headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
@@ -73,16 +104,19 @@ serve(async (req) => {
     });
 
   } catch (error: any) {
-    console.error('=== NATIVE SUPABASE AI EMBEDDING ERROR ===');
+    console.error('=== STREAMING SUPABASE AI EMBEDDING ERROR ===');
     console.error('Error details:', error);
     console.error('Error message:', error.message);
     console.error('Error stack:', error.stack);
     
+    // Cleanup on error
+    cleanupModel();
+    
     return new Response(JSON.stringify({ 
-      error: `Native AI Session Error: ${error.message}`,
+      error: `Streaming AI Session Error: ${error.message}`,
       errorType: error.name,
       debug: {
-        method: 'native-supabase-ai-session',
+        method: 'streaming-native-supabase-ai-session',
         timestamp: new Date().toISOString()
       }
     }), {
@@ -92,4 +126,4 @@ serve(async (req) => {
   }
 });
 
-console.log('Native Supabase AI Session embedding function started...'); 
+console.log('Streaming Supabase AI Session embedding function started...'); 

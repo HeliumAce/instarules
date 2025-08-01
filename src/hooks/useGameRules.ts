@@ -10,8 +10,6 @@ import { useSupabase } from '@/context/SupabaseContext';
 interface GameRulesData {
   game: string;
   rules: any;
-  // We might not need sections loaded by default anymore if using vector search only
-  // sections: any[]; 
 }
 
 // Define the structure for vector search results (matches the service function)
@@ -35,8 +33,6 @@ interface UseGameRulesReturn {
   askMutation: UseMutationResult<string, Error, AskQuestionVariables, unknown>;
   getFallbackResponse: (question: string) => string;
 }
-
-// Define the isSimilarContent function early in the file, outside the hooks
 
 // Helper function to check if two content blocks are similar
 function isSimilarContent(content1: string, content2: string, threshold: number): boolean {
