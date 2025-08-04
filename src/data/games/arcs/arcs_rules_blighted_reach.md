@@ -1,5 +1,7 @@
 # The Blighted Reach Rules
 
+<!--
+
 ## Page 1
 
 ## ARCS (Page 1)
@@ -94,6 +96,8 @@ Some Fates turn you into a Flagship, adding this piece to the map.
 #### FLAGSHIP BOARD (Page 2)
 
 Some Fates turn you into a Flagship, giving you this board.
+
+-->
 
 ## Page 3
 

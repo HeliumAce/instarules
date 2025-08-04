@@ -1,5 +1,7 @@
 # Base Game Rules
 
+<!-- 
+
 ## Introduction
 
 This document contains comprehensive rules, FAQs, and card information for the ARCS game, including both the base game and The Blighted Reach expansion. All content has been organized for easy reference and searchability.
@@ -75,6 +77,8 @@ Cities are built on planets and can be taxed to gain resource tokens onto your p
 #### POWER MARKER (2) (Page 2)
 
 This marker tracks your current Power on the bottom map edge. The second marker is used in expansions to track negative Power and very high Power.
+
+-->
 
 ## Page 3
 
@@ -816,6 +820,8 @@ If you're prompted to draw from the action discard pile, draw from the facedown 
 - Turn: The time in which a player plays an action card and may take actions.
 - Turn Order: Starting with the player with initiative and going clockwise.
 
+<!--
+
 ## CREDITS (Page 23)
 
 Game Design: Cole Wehrle
@@ -920,3 +926,5 @@ If you'd like to learn Arcs by watching a how-to-play video, use the QR code bel
 Need a replacement part? ledergames.com/replacements
 
 Learn more about Arcs! ledergames.com/arcs
+
+-->
