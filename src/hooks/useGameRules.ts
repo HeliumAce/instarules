@@ -1,7 +1,7 @@
 import { useQuery, useMutation, UseQueryResult, UseMutationResult } from '@tanstack/react-query';
 import { getLLMCompletion } from '@/services/LLMService';
 import { fetchGameRules, fetchRelevantSectionsFromVectorDb, findRelevantSections } from '@/services/RulesService';
-import { preprocessQuery, classifyQuery, detectFollowUp, expandQueryByType } from '@/services/QueryPreprocessorService';
+import { QueryProcessingService } from '@/services/query';
 import { extractEntitiesFromHistory, rankEntitiesByRelevance } from '@/services/EntityExtractionService';
 import { gameResponses } from '@/data/games';
 import { useSupabase } from '@/context/SupabaseContext';
@@ -372,7 +372,7 @@ export function useGameRules(gameId: string): UseGameRulesReturn {
       }
 
       // Get query classifications right at the beginning
-      const queryTypes = classifyQuery(question);
+      const queryTypes = QueryProcessingService.classifyQuery(question);
       const isEnumerationQuestion = queryTypes.includes('ENUMERATION_QUESTION');
       const isCardEnumerationQuestion = 
         (isEnumerationQuestion || question.toLowerCase().match(/how many|different|types of|all|count/i) !== null) && 
@@ -381,8 +381,8 @@ export function useGameRules(gameId: string): UseGameRulesReturn {
       // Preprocess the query with chat history for follow-up detection
       // Skip follow-up handling if skipFollowUpHandling is true
       const expandedQueries = skipFollowUpHandling
-        ? expandQueryByType(question, queryTypes) // Use standard query expansion without follow-up handling
-        : preprocessQuery(question, chatHistory);
+        ? QueryProcessingService.expandQueryByType(question, queryTypes) // Use standard query expansion without follow-up handling
+        : QueryProcessingService.preprocessQuery(question, chatHistory);
         
       console.log(`[Hybrid Search] Using ${expandedQueries.length} query variations ${skipFollowUpHandling ? 'without' : 'including'} follow-up handling`);
       
@@ -502,7 +502,7 @@ export function useGameRules(gameId: string): UseGameRulesReturn {
       if (!skipFollowUpHandling &&
           (finalResults.length < 2 || finalResults.every(result => result.similarity < 0.45)) && 
           chatHistory && chatHistory.length >= 2 && 
-          detectFollowUp(question)) {
+          QueryProcessingService.detectFollowUp(question)) {
           
         console.log('[Follow-up Recovery] Detected potential follow-up with poor results, attempting recovery');
         

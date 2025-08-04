@@ -6,7 +6,7 @@
  */
 
 import { VectorSearchResult } from '@/types/search';
-import { classifyQuery } from '@/services/QueryPreprocessorService';
+import { QueryProcessingService } from '@/services/query';
 
 /**
  * Context object containing all inputs needed for prompt building
@@ -54,7 +54,7 @@ export const PromptService = {
     }
       
     // Detect question complexity to customize instructions
-    const queryTypes = classifyQuery(question);
+    const queryTypes = QueryProcessingService.classifyQuery(question);
     const isEnumeration = queryTypes.includes('ENUMERATION_QUESTION');
     const isComparison = queryTypes.includes('COMPARISON_QUESTION');
     const isInteraction = queryTypes.includes('INTERACTION_QUESTION');

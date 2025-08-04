@@ -1,8 +1,8 @@
 import { SupabaseClient } from '@supabase/supabase-js';
 import { VectorSearchResult } from '@/types/search';
 import { fetchRelevantSectionsFromVectorDb } from '@/services/RulesService';
-import { SearchRefinementService } from '@/services/SearchRefinementService';
-import { FollowUpRecoveryService } from '@/services/FollowUpRecoveryService';
+import { SearchRefinementService } from './SearchRefinementService';
+import { FollowUpRecoveryService } from './FollowUpRecoveryService';
 
 export interface SearchOrchestrationOptions {
   gameName: string;
