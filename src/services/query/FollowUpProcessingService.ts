@@ -89,7 +89,8 @@ export class FollowUpProcessingService {
     if (entities.length === 0) return query;
     
     // Get the highest-ranked entities - these are most likely the subjects of the follow-up
-    const sortedEntities = rankEntitiesByRelevance(entities, query);
+    const rankingResult = rankEntitiesByRelevance({ entities, query });
+    const sortedEntities = rankingResult.entities;
     
     // Get the most relevant entity
     const primaryEntity = sortedEntities[0];
@@ -164,7 +165,8 @@ export class FollowUpProcessingService {
     console.log('[Follow-up Detection] Detected potential follow-up question:', query);
     
     // Get entities from conversation history
-    const entities = extractEntitiesFromHistory(chatHistory);
+    const entityResult = extractEntitiesFromHistory({ chatHistory });
+    const entities = entityResult.entities;
     console.log('[Follow-up Detection] Extracted entities:', entities.map(e => e.text).join(', '));
     
     // Get previous question for context
@@ -198,7 +200,8 @@ export class FollowUpProcessingService {
     entities: Entity[];
     conversationLength: number;
   } {
-    const entities = extractEntitiesFromHistory(chatHistory);
+    const entityResult = extractEntitiesFromHistory({ chatHistory });
+    const entities = entityResult.entities;
     const conversationLength = chatHistory.length;
     
     // Extract recent topics from the last few user messages

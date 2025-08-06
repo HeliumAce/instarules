@@ -32,12 +32,12 @@ export class SourceFormattingService {
     const sources = SourceConversionService.convertToSources(results);
     
     // Step 2: Deduplicate sources with quality checks
-    const deduplicatedSources = SourceDeduplicationService.deduplicateSources(sources, enableQualityChecks);
+    const deduplicationResult = SourceDeduplicationService.deduplicateSources({ sources, enableQualityChecks });
     
     // Step 3: Sort sources for optimal display
-    const sortedSources = SourceSortingService.sortSources(deduplicatedSources, sortBy);
+    const sortingResult = SourceSortingService.sortSources({ sources: deduplicationResult.sources, sortBy });
     
-    return sortedSources;
+    return sortingResult.sources;
   }
 
   /**

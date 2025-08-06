@@ -8,13 +8,44 @@
 import { Source, RuleSource, CardSource } from './SourceConversionService';
 import { SourceDeduplicationService } from './SourceDeduplicationService';
 
+export interface SortingOptions {
+  sources: Source[];
+  sortBy?: 'pageNumber' | 'alphabetical' | 'quality';
+}
+
+export interface SortingResult {
+  sources: Source[];
+  stats: {
+    ruleSources: number;
+    cardSources: number;
+    otherSources: number;
+    sortedBy: string;
+  };
+}
+
+export interface GroupingOptions {
+  ruleSources: RuleSource[];
+}
+
+export type SortMethod = 'pageNumber' | 'alphabetical' | 'quality';
+
 export class SourceSortingService {
   /**
    * Sorts sources for optimal display order.
    */
-  static sortSources(sources: Source[], sortBy: 'pageNumber' | 'alphabetical' | 'quality' = 'pageNumber'): Source[] {
+  static sortSources(options: SortingOptions): SortingResult {
+    const { sources, sortBy = 'pageNumber' } = options;
+    
     if (!sources || sources.length <= 1) {
-      return sources;
+      return {
+        sources,
+        stats: {
+          ruleSources: 0,
+          cardSources: 0,
+          otherSources: 0,
+          sortedBy: sortBy
+        }
+      };
     }
     
     const ruleSources: RuleSource[] = [];
@@ -37,13 +68,23 @@ export class SourceSortingService {
     const sortedCardSources = this.sortCardSources(cardSources, sortBy);
     
     // Combine all sources - rules first, then cards, then others
-    return [...sortedRuleSources, ...sortedCardSources, ...otherSources];
+    const sortedSources = [...sortedRuleSources, ...sortedCardSources, ...otherSources];
+    
+    return {
+      sources: sortedSources,
+      stats: {
+        ruleSources: sortedRuleSources.length,
+        cardSources: sortedCardSources.length,
+        otherSources: otherSources.length,
+        sortedBy: sortBy
+      }
+    };
   }
 
   /**
    * Sorts rule sources by the specified method.
    */
-  private static sortRuleSources(ruleSources: RuleSource[], sortBy: string): RuleSource[] {
+  private static sortRuleSources(ruleSources: RuleSource[], sortBy: SortMethod): RuleSource[] {
     if (sortBy === 'pageNumber') {
       return this.sortRuleSourcesByPage(ruleSources);
     } else if (sortBy === 'alphabetical') {
@@ -103,7 +144,7 @@ export class SourceSortingService {
   /**
    * Sorts card sources by the specified method.
    */
-  private static sortCardSources(cardSources: CardSource[], sortBy: string): CardSource[] {
+  private static sortCardSources(cardSources: CardSource[], sortBy: SortMethod): CardSource[] {
     if (sortBy === 'alphabetical') {
       return this.sortCardSourcesAlphabetically(cardSources);
     } else if (sortBy === 'quality') {
@@ -138,7 +179,8 @@ export class SourceSortingService {
   /**
    * Groups similar rule sources by heading for consolidation.
    */
-  static groupSimilarRuleSources(ruleSources: RuleSource[]): RuleSource[] {
+  static groupSimilarRuleSources(options: GroupingOptions): RuleSource[] {
+    const { ruleSources } = options;
     const grouped = new Map<string, RuleSource[]>();
     
     ruleSources.forEach(source => {

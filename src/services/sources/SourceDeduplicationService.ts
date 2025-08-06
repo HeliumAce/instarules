@@ -7,20 +7,66 @@
 
 import { Source, RuleSource, CardSource } from './SourceConversionService';
 
+export interface DeduplicationOptions {
+  sources: Source[];
+  enableQualityChecks?: boolean;
+}
+
+export interface DeduplicationResult {
+  sources: Source[];
+  stats: {
+    originalCount: number;
+    finalCount: number;
+    duplicatesRemoved: number;
+  };
+}
+
+export interface QualityComparisonOptions {
+  newSource: RuleSource | CardSource;
+  existingSource: RuleSource | CardSource;
+}
+
+export interface SimilarityCheckOptions {
+  content1: string;
+  content2: string;
+  threshold: number;
+}
+
 export class SourceDeduplicationService {
   /**
    * Performs comprehensive deduplication with quality checks.
    */
-  static deduplicateSources(sources: Source[], enableQualityChecks = true): Source[] {
+  static deduplicateSources(options: DeduplicationOptions): DeduplicationResult {
+    const { sources, enableQualityChecks = true } = options;
+    
     if (!sources || sources.length <= 1) {
-      return sources;
+      return {
+        sources,
+        stats: {
+          originalCount: sources?.length || 0,
+          finalCount: sources?.length || 0,
+          duplicatesRemoved: 0
+        }
+      };
     }
     
+    const originalCount = sources.length;
+    let deduplicatedSources: Source[];
+    
     if (enableQualityChecks) {
-      return this.deduplicateWithQuality(sources);
+      deduplicatedSources = this.deduplicateWithQuality(sources);
     } else {
-      return this.simpleDeduplication(sources);
+      deduplicatedSources = this.simpleDeduplication(sources);
     }
+    
+    return {
+      sources: deduplicatedSources,
+      stats: {
+        originalCount,
+        finalCount: deduplicatedSources.length,
+        duplicatesRemoved: originalCount - deduplicatedSources.length
+      }
+    };
   }
 
   /**
@@ -162,7 +208,8 @@ export class SourceDeduplicationService {
   /**
    * Checks if two content blocks are similar.
    */
-  static isSimilarContent(content1: string, content2: string, threshold: number): boolean {
+  static isSimilarContent(options: SimilarityCheckOptions): boolean {
+    const { content1, content2, threshold } = options;
     const preview1 = content1.substring(0, 200).toLowerCase();
     const preview2 = content2.substring(0, 200).toLowerCase();
     

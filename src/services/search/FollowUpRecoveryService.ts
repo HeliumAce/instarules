@@ -35,14 +35,16 @@ export class FollowUpRecoveryService {
     console.log('[Follow-up Recovery] Detected potential follow-up with poor results, attempting recovery');
     
     // Get entities from recent conversation history
-    const entities = extractEntitiesFromHistory(chatHistory);
+    const entityResult = extractEntitiesFromHistory({ chatHistory });
+    const entities = entityResult.entities;
     
     if (entities.length === 0) {
       return finalResults;
     }
     
     // Sort entities by recency and salience
-    const sortedEntities = rankEntitiesByRelevance(entities, question);
+    const rankingResult = rankEntitiesByRelevance({ entities, query: question });
+    const sortedEntities = rankingResult.entities;
     
     // Take the top 2 entities and use them for recovery search
     const recoveryTerms = sortedEntities.slice(0, 2).map(e => e.text);

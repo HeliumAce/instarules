@@ -20,4 +20,18 @@ export type {
 
 export type {
   MessageSources
-} from './SourceFormattingService'; 
+} from './SourceFormattingService';
+
+export type {
+  DeduplicationOptions,
+  DeduplicationResult,
+  QualityComparisonOptions,
+  SimilarityCheckOptions
+} from './SourceDeduplicationService';
+
+export type {
+  SortingOptions,
+  SortingResult,
+  GroupingOptions,
+  SortMethod
+} from './SourceSortingService'; 
