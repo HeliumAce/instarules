@@ -1,4 +1,4 @@
-import { useSupabase } from '../context/SupabaseContext'; // Corrected path
+
 import axios from 'axios'; // Ensure axios is imported if not already
 import { SupabaseClient } from '@supabase/supabase-js'; // Import SupabaseClient type
 import { VectorSearchResult } from '../types/search';
