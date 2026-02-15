@@ -29,6 +29,7 @@ dist-ssr
 
 # Project files
 project-docs
+tasks
 
 #Temp files
 supabase/.temp/

@@ -1,6 +1,7 @@
-import { useSupabase } from '../context/SupabaseContext'; // Corrected path
+
 import axios from 'axios'; // Ensure axios is imported if not already
 import { SupabaseClient } from '@supabase/supabase-js'; // Import SupabaseClient type
+import { VectorSearchResult } from '../types/search';
 
 // Helper to load HTML file content
 const loadHtmlFile = (url: string): Promise<string> => {
@@ -335,13 +336,7 @@ const findSectionByName = (sections: any[], name: string): any | null => {
   return null;
 }
 
-// Type for the vector search results expected from the edge function
-interface VectorSearchResult {
-  id: string;
-  content: string;
-  metadata: Record<string, any>;
-  similarity: number;
-}
+// VectorSearchResult type now imported from centralized types
 
 /**
  * Fetches relevant rule sections by calling the Supabase vector-search edge function.

@@ -3,16 +3,12 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 // Import the main Chunk type
 import type { Chunk } from '../utils/markdownProcessor.js';
+import { VectorSearchResult } from '../../src/types/search.js';
 import OpenAI from 'openai';
 import 'dotenv/config';
 
-// Define the structure of the search results, matching the SQL function's return table
-export interface ArcsRuleSearchResult {
-    id: string; // UUID
-    content: string;
-    metadata: Chunk['metadata']; // Use the metadata type from the imported Chunk interface
-    similarity: number;
-}
+// VectorSearchResult type now imported from centralized types
+// Note: Using VectorSearchResult instead of ArcsRuleSearchResult for consistency
 
 // Initialize Supabase client (ensure environment variables are set)
 // Use Service Role Key for backend operations
@@ -55,7 +51,7 @@ export async function vectorSearchArcsRules(
     query: string,
     matchThreshold: number = 0.50, // Default threshold
     matchCount: number = 8        // Default number of results
-): Promise<ArcsRuleSearchResult[]> {
+): Promise<VectorSearchResult[]> {
     // console.log(`Performing vector search for query: "${query}"`);
 
     // 1. Generate embedding for the query using OpenAI
@@ -86,7 +82,7 @@ export async function vectorSearchArcsRules(
 
     // 2. Call the SQL function via RPC
     try {
-        const { data: searchData, error: rpcError } = await supabaseAdmin.rpc<'match_arcs_rules', ArcsRuleSearchResult[]>(
+        const { data: searchData, error: rpcError } = await supabaseAdmin.rpc<'match_arcs_rules', VectorSearchResult[]>(
             'match_arcs_rules', // The name of the SQL function
             {
                 query_embedding: queryEmbedding,
@@ -115,36 +111,10 @@ export async function vectorSearchArcsRules(
              // Depending on strictness, you might throw an error or filter invalid items
         }
 
-        return searchData as ArcsRuleSearchResult[]; // Cast should be safe after checks
+        return searchData as VectorSearchResult[]; // Cast should be safe after checks
 
     } catch (error: any) {
         // console.error('Failed to perform vector search:', error);
         throw new Error(`Failed to execute search: ${error.message}`);
     }
 }
-
-// Example usage (demonstrates how to call the function)
-/*
-async function runSearchExample() {
-    const exampleQuery = "How does battle work?";
-    try {
-        // console.log(`\n--- Running search example for: "${exampleQuery}" ---`);
-        const results = await vectorSearchArcsRules(exampleQuery, 0.7, 3); // Find top 3 matches with similarity > 0.7
-        // console.log('\n--- Search Results ---');
-        if (results.length > 0) {
-            results.forEach((result, index) => {
-                // console.log(`\n--- Result ${index + 1} (Similarity: ${result.similarity.toFixed(4)}) ---`);
-                // console.log('Metadata:', result.metadata);
-                // console.log('Content Preview:', result.content.substring(0, 200) + '...');
-            });
-        } else {
-            // console.log('No results found matching the criteria.');
-        }
-    } catch (error) {
-        // console.error('\n--- Search Example Failed ---');
-        // console.error(error);
-    }
-}
-
-// runSearchExample(); // Uncomment to run example
-*/ 
