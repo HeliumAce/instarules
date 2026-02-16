@@ -1,10 +1,10 @@
 import { useQuery, useMutation, UseQueryResult, UseMutationResult } from '@tanstack/react-query';
 import { getLLMCompletion } from '@/services/LLMService';
-import { fetchGameRules, fetchRelevantSectionsFromVectorDb, findRelevantSections } from '@/services/RulesService';
+import { fetchGameRules, fetchRelevantSectionsFromVectorDb, findRelevantSections, loadFullRulebookContent } from '@/services/RulesService';
 import { QueryProcessingService } from '@/services/query';
 import { SourceFormattingService } from '@/services/sources';
 import { extractEntitiesFromHistory, rankEntitiesByRelevance } from '@/services/EntityExtractionService';
-import { gameResponses } from '@/data/games';
+import { gameResponses, getGameConfig } from '@/data/games';
 import { useSupabase } from '@/context/SupabaseContext';
 import { VectorSearchResult } from '@/types/search';
 import { PromptService } from '@/services/PromptService';
@@ -59,28 +59,51 @@ export function useGameRules(gameId: string): UseGameRulesReturn {
       // Ensure game name is available
       const gameName = rulesQuery.data?.game;
       if (!gameName) {
-        throw new Error('Game information not loaded yet.'); 
+        throw new Error('Game information not loaded yet.');
       }
 
+      const gameConfig = getGameConfig(gameId);
+
+      // ── Full-context strategy ──────────────────────────────────
+      if (gameConfig.strategy === 'full-context') {
+        console.log(`[Full-Context] Loading full rulebook for ${gameName}`);
+        const rulebookContent = await loadFullRulebookContent(gameId);
+
+        const prompt = PromptService.buildPrompt({
+          gameName,
+          question,
+          rawContext: rulebookContent,
+          chatHistory,
+        });
+        const response = await getLLMCompletion({ prompt });
+        return String(response);
+      }
+
+      // ── No data available ──────────────────────────────────────
+      if (gameConfig.strategy === 'none') {
+        return getFallbackResponse(question);
+      }
+
+      // ── Vector-search strategy (+ future hybrid fallback) ─────
       // Get query classifications right at the beginning
       const queryTypes = QueryProcessingService.classifyQuery(question);
       const isEnumerationQuestion = queryTypes.includes('ENUMERATION_QUESTION');
-      const isCardEnumerationQuestion = 
-        (isEnumerationQuestion || question.toLowerCase().match(/how many|different|types of|all|count/i) !== null) && 
+      const isCardEnumerationQuestion =
+        (isEnumerationQuestion || question.toLowerCase().match(/how many|different|types of|all|count/i) !== null) &&
         question.toLowerCase().match(/cards?|types?/i) !== null;
-      
+
       // Preprocess the query with chat history for follow-up detection
       // Skip follow-up handling if skipFollowUpHandling is true
       const expandedQueries = skipFollowUpHandling
         ? QueryProcessingService.expandQueryByType(question, queryTypes) // Use standard query expansion without follow-up handling
         : QueryProcessingService.preprocessQuery(question, chatHistory);
-        
+
       console.log(`[Hybrid Search] Using ${expandedQueries.length} query variations ${skipFollowUpHandling ? 'without' : 'including'} follow-up handling`);
-      
+
       // Step 1: Perform vector search with all query variations
       console.log(`[Hybrid Search] Starting vector searches`);
       let allVectorResults: VectorSearchResult[] = [];
-      
+
       // Execute searches
       for (const expandedQuery of expandedQueries) {
         console.log(`[Hybrid Search] Vector search for: "${expandedQuery}"`);
@@ -88,38 +111,38 @@ export function useGameRules(gameId: string): UseGameRulesReturn {
         console.log(`[Hybrid Search] Found ${results.length} results for variation`);
         allVectorResults = [...allVectorResults, ...results];
       }
-      
+
       // Simple deduplication without using the name-based approach yet
-      const vectorResults = allVectorResults.filter((result, index, self) => 
+      const vectorResults = allVectorResults.filter((result, index, self) =>
         index === self.findIndex(r => r.id === result.id)
       );
-      
+
       // For complex questions, lower the deduplication strictness to gather more diverse context
-      let dedupThreshold = queryTypes.some(type => 
+      let dedupThreshold = queryTypes.some(type =>
         ['REASONING_QUESTION', 'COMPARISON_QUESTION', 'INTERACTION_QUESTION'].includes(type)
       ) ? 0.3 : 0.8;
-      
+
       // Different deduplication strategies based on question type
       const isDedupByName = isCardEnumerationQuestion; // Use name-based dedup for card enumeration
-      
+
       // Deduplicate vector results with adaptable strategy
       let allResults = [...vectorResults];
-      
+
       // For complex questions or low result count, try adding broader context
-      if ((queryTypes.some(type => 
+      if ((queryTypes.some(type =>
         ['REASONING_QUESTION', 'COMPARISON_QUESTION', 'INTERACTION_QUESTION'].includes(type)
       ) && vectorResults.length < 5) || vectorResults.length < 2) {
         // Add broader search with multiple variations
-        const broaderQueries = [];
-        
+        const broaderQueries: string[] = [];
+
         if (isEnumerationQuestion) {
           // Extract subject of enumeration for broader search
-          const match = question.toLowerCase().match(/how many (.+?)(\s|are|\?|$)/i) || 
+          const match = question.toLowerCase().match(/how many (.+?)(\s|are|\?|$)/i) ||
                        question.toLowerCase().match(/what are (?:all|the) (.+?)(\s|\?|$)/i);
           if (match && match[1]) {
             broaderQueries.push(`${match[1].trim()} types list all`);
           }
-        } else if (queryTypes.some(type => 
+        } else if (queryTypes.some(type =>
           ['REASONING_QUESTION', 'COMPARISON_QUESTION', 'INTERACTION_QUESTION'].includes(type)
         )) {
           // Extract key terms for broader search
@@ -128,7 +151,7 @@ export function useGameRules(gameId: string): UseGameRulesReturn {
             broaderQueries.push(`${term} rules mechanics interactions`);
           });
         }
-        
+
         // Perform additional searches with broader queries
         for (const broadQuery of broaderQueries) {
           const additionalSections = await fetchRelevantSectionsFromVectorDb(supabase, broadQuery);
@@ -136,49 +159,49 @@ export function useGameRules(gameId: string): UseGameRulesReturn {
           allResults.push(...additionalSections);
         }
       }
-      
+
       // If initial search doesn't yield good results, refine the search
-      if (allResults.length < 3 || 
+      if (allResults.length < 3 ||
           allResults.every(result => result.similarity < 0.55)) {
         console.log(`[Hybrid Search] Initial results insufficient, attempting refinement`);
-        
+
         // 1. Try query reformulation
         const reformulatedQuery = PromptService.reformulateQuery(question);
         if (reformulatedQuery !== question) {
           console.log(`[Hybrid Search] Trying reformulated query: "${reformulatedQuery}"`);
           const refinedResults = await fetchRelevantSectionsFromVectorDb(supabase, reformulatedQuery);
-          
+
           // Add to results set and deduplicate
           allResults = [...allResults, ...refinedResults];
           // ...deduplication code...
         }
-        
+
         // 2. Try focused searches on key entities (especially for enumeration)
         if (isEnumerationQuestion) {
           const subject = PromptService.extractSubject(question);
           if (subject) {
             console.log(`[Hybrid Search] Running focused search on subject: "${subject}"`);
             const subjectResults = await fetchRelevantSectionsFromVectorDb(
-              supabase, 
+              supabase,
               `${subject} list all types complete`
             );
-            
+
             // Add to results set with high priority
             allResults.unshift(...subjectResults);
             // ...deduplication code...
           }
         }
       }
-      
+
       // Determine result limit based on question type
-      const resultLimit = isCardEnumerationQuestion ? 15 : 
+      const resultLimit = isCardEnumerationQuestion ? 15 :
         (isEnumerationQuestion ? 12 : 8);
-      
+
       // Sort by similarity and take top results with dynamic limit
       const finalResults = allResults
         .sort((a, b) => b.similarity - a.similarity)
         .slice(0, resultLimit);
-      
+
       // Log combined results for debugging
       console.log(`[Hybrid Search] Final combined results: ${finalResults.length}`);
       finalResults.forEach((result, i) => {
@@ -191,31 +214,31 @@ export function useGameRules(gameId: string): UseGameRulesReturn {
       // If we have poor results (few or low similarity) and detected a likely follow-up question,
       // try searching using the most recent entities from the conversation as context
       if (!skipFollowUpHandling &&
-          (finalResults.length < 2 || finalResults.every(result => result.similarity < 0.45)) && 
-          chatHistory && chatHistory.length >= 2 && 
+          (finalResults.length < 2 || finalResults.every(result => result.similarity < 0.45)) &&
+          chatHistory && chatHistory.length >= 2 &&
           QueryProcessingService.detectFollowUp(question)) {
-          
+
         console.log('[Follow-up Recovery] Detected potential follow-up with poor results, attempting recovery');
-        
+
         // Get entities from recent conversation history
         const entityResult = extractEntitiesFromHistory({ chatHistory });
         const entities = entityResult.entities;
-        
+
         if (entities.length > 0) {
           // Sort entities by recency and salience
           const rankingResult = rankEntitiesByRelevance({ entities, query: question });
         const sortedEntities = rankingResult.entities;
-          
+
           // Take the top 2 entities and use them for recovery search
           const recoveryTerms = sortedEntities.slice(0, 2).map(e => e.text);
-          
+
           console.log(`[Follow-up Recovery] Using terms: ${recoveryTerms.join(', ')}`);
-          
+
           // Run a recovery search with these terms and the original question
-          const recoveryQueries = recoveryTerms.map(term => 
+          const recoveryQueries = recoveryTerms.map(term =>
             `${question} ${term}`
           );
-          
+
           // Perform recovery searches
           const recoveryResults: VectorSearchResult[] = [];
           for (const recoveryQuery of recoveryQueries) {
@@ -223,23 +246,23 @@ export function useGameRules(gameId: string): UseGameRulesReturn {
             const results = await fetchRelevantSectionsFromVectorDb(supabase, recoveryQuery);
             recoveryResults.push(...results);
           }
-          
+
           // Add recovery results to final results if they're better
           if (recoveryResults.length > 0) {
             const uniqueRecoveryResults = recoveryResults.filter(
               recovery => !finalResults.some(final => final.id === recovery.id)
             );
-            
+
             // If we have new good results, add them
             const goodRecoveryResults = uniqueRecoveryResults
               .filter(result => result.similarity > 0.5)
               .sort((a, b) => b.similarity - a.similarity)
               .slice(0, 3);
-            
+
             if (goodRecoveryResults.length > 0) {
               console.log(`[Follow-up Recovery] Found ${goodRecoveryResults.length} additional relevant sections`);
               finalResults.push(...goodRecoveryResults);
-              
+
               // Re-sort by similarity
               finalResults.sort((a, b) => b.similarity - a.similarity);
             }
@@ -255,16 +278,16 @@ export function useGameRules(gameId: string): UseGameRulesReturn {
           sections: finalResults,
           chatHistory: skipFollowUpHandling ? undefined : chatHistory
         });
-        const response = await getLLMCompletion({ prompt }); 
-        
+        const response = await getLLMCompletion({ prompt });
+
         // Create a response object with sources metadata
         const sourcesData = SourceFormattingService.convertToMessageSources(finalResults);
         const enhancedResponse = Object.assign(String(response), { sources: sourcesData });
-        
+
         return enhancedResponse;
       } else {
         // Fallback if no results found
-        return getFallbackResponse(question); 
+        return getFallbackResponse(question);
       }
     },
   });

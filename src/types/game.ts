@@ -1,3 +1,10 @@
+export type RetrievalStrategy = 'vector-search' | 'full-context' | 'hybrid';
+
+export interface GameRetrievalConfig {
+  strategy: RetrievalStrategy;
+  displayName: string;
+}
+
 export type Game = {
   id: string;
   title: string;

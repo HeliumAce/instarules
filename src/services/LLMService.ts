@@ -67,7 +67,7 @@ export const getLLMCompletion = async (options: LLMCompletionOptions): Promise<s
   }
 
   try {
-    const model = modelPreference || 'google/gemini-2.0-flash-001';
+    const model = modelPreference || 'google/gemini-2.5-flash-lite';
 
     const request: OpenRouterRequest = {
       model,

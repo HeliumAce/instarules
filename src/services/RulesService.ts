@@ -2,6 +2,7 @@
 import axios from 'axios'; // Ensure axios is imported if not already
 import { SupabaseClient } from '@supabase/supabase-js'; // Import SupabaseClient type
 import { VectorSearchResult } from '../types/search';
+import { getGameConfig } from '@/data/games';
 
 // Helper to load HTML file content
 const loadHtmlFile = (url: string): Promise<string> => {
@@ -97,27 +98,9 @@ const processArcsHtmlContent = (baseRulesHtml: string, blightedReachHtml: string
   return sections;
 }
 
-// Add this new function near the top of the file (around line 95, before loadArcsRules)
 const getGameMetadata = (gameId: string): { game: string } => {
-  const gameNames: Record<string, string> = {
-    'arcs': 'Arcs',
-    'radlands': 'Radlands',
-    'bohnanza': 'Bohnanza',
-    'modern-art': 'Modern Art',
-    'catan': 'Catan',
-    'ticket-to-ride': 'Ticket to Ride',
-    'pandemic': 'Pandemic',
-    'wingspan': 'Wingspan',
-    'scythe': 'Scythe',
-    'terraforming-mars': 'Terraforming Mars',
-    'gloomhaven': 'Gloomhaven',
-    'azul': 'Azul'
-    // Add other games as needed
-  };
-  
-  return {
-    game: gameNames[gameId] || 'Unknown Game'
-  };
+  const config = getGameConfig(gameId);
+  return { game: config.displayName };
 };
 
 // Main function to load Arcs rules from multiple sources
@@ -182,17 +165,38 @@ const getGameMetadata = (gameId: string): { game: string } => {
  * Handles loading JSON for general games and combined sources for 'arcs'.
  */
 export const fetchGameRules = async (gameId: string): Promise<any> => {
+  const config = getGameConfig(gameId);
+
+  // For games with a retrieval strategy, return lightweight metadata
+  // (the actual content is loaded separately based on strategy)
+  if (config.strategy !== 'none') {
+    return getGameMetadata(gameId);
+  }
+
+  // Fallback: try to load a JSON rules file for games without a strategy
   try {
-    if (gameId === 'arcs') {
-      // Return lightweight metadata instead of full rules for pure vector search
-      return getGameMetadata(gameId);
-    }
-    
     const rules = await import(/* @vite-ignore */ `@/data/games/${gameId}/${gameId}-base.json`);
     return rules.default || rules;
   } catch (error) {
-    throw new Error(`Game rules not found for ${gameId}`);
+    return getGameMetadata(gameId);
   }
+}
+
+/**
+ * Loads the full rulebook content for games using the 'full-context' or 'hybrid' strategy.
+ * Uses Vite's ?raw import to load markdown as a string.
+ */
+export const loadFullRulebookContent = async (gameId: string): Promise<string> => {
+  const fileId = gameId.replace(/-/g, '_');
+  const modules = import.meta.glob('/src/data/games/**/*_rules.md', { query: '?raw', import: 'default' });
+  const path = `/src/data/games/${gameId}/${fileId}_rules.md`;
+  const loader = modules[path];
+
+  if (!loader) {
+    throw new Error(`No rulebook found for game: ${gameId} (expected ${path})`);
+  }
+
+  return await loader() as string;
 }
 
 /**
