@@ -1,4 +1,4 @@
-import { Game } from '@/types/game';
+import { Game, GameRetrievalConfig, RetrievalStrategy } from '@/types/game';
 
 export const gameData: Game[] = [
   {
@@ -68,20 +68,36 @@ export const gameData: Game[] = [
     isFavorite: false
   },
   {
-    id: "gloomhaven",
-    title: "Gloomhaven",
-    description: "A cooperative game of tactical combat in a persistent, evolving fantasy campaign world.",
-    coverImage: "https://images.unsplash.com/photo-1518736114810-f0d758375f92?q=80&w=800&h=500&auto=format&fit=crop",
-    isFavorite: false
-  },
-  {
     id: "azul",
     title: "Azul",
     description: "Draft colorful tiles to decorate the walls of the Royal Palace of Evora.",
     coverImage: "https://images.unsplash.com/photo-1567225557594-88d73e55f2cb?q=80&w=800&h=500&auto=format&fit=crop",
     isFavorite: false
+  },
+  {
+    id: "ark-nova",
+    title: "Ark Nova",
+    description: "Plan and design a modern, scientifically managed zoo to support conservation projects worldwide.",
+    isFavorite: false
+  },
+  {
+    id: "brass-lancashire",
+    title: "Brass Lancashire",
+    description: "Build networks, develop industries, and navigate the world of the Industrial Revolution in Lancashire.",
+    isFavorite: false
   }
 ];
+
+// Retrieval strategy config per game
+// Games not listed here have no rules data and will use fallback responses
+export const gameRetrievalConfig: Record<string, GameRetrievalConfig> = {
+  'arcs': { strategy: 'vector-search', displayName: 'Arcs' },
+  'brass-lancashire': { strategy: 'full-context', displayName: 'Brass Lancashire' },
+};
+
+export const getGameConfig = (gameId: string): { strategy: RetrievalStrategy | 'none'; displayName: string } => {
+  return gameRetrievalConfig[gameId] ?? { strategy: 'none' as const, displayName: 'Unknown Game' };
+};
 
 // Sample AI responses for game-specific queries
 export const gameResponses: Record<string, Record<string, string>> = {

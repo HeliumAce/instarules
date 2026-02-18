@@ -14,7 +14,8 @@ import { QueryProcessingService } from '@/services/query';
 export interface PromptContext {
   gameName: string;
   question: string;
-  sections: VectorSearchResult[];
+  sections?: VectorSearchResult[];
+  rawContext?: string;
   chatHistory?: { content: string; isUser: boolean }[];
 }
 
@@ -26,22 +27,30 @@ export const PromptService = {
    * Builds a complete prompt for the LLM based on the provided context
    */
   buildPrompt: (context: PromptContext): string => {
-    const { gameName, question, sections, chatHistory } = context;
-    
-    // Format the context from vector search results
-    const contextText = sections
-      .map(section => {
-        // Attempt to create a title from metadata, fallback if needed
-        const title = section.metadata?.heading_path?.join(' > ') || section.metadata?.card || 'Relevant Section';
-        return `## ${title}\n${section.content}`;
-      })
-      .join('\n\n');
-    
-    // Calculate average similarity to help the LLM understand context quality
-    const avgSimilarity = sections.reduce((sum, section) => sum + section.similarity, 0) / sections.length;
-    const contextQualityNote = avgSimilarity < 0.6 
-      ? "\n\nNOTE: The provided information may have low relevance to the question. Be cautious in your response."
-      : "";
+    const { gameName, question, sections, rawContext, chatHistory } = context;
+
+    let contextText: string;
+    let contextQualityNote = '';
+
+    if (rawContext) {
+      // Full-context mode: use the raw rulebook content directly
+      contextText = rawContext;
+    } else if (sections && sections.length > 0) {
+      // Vector search mode: format retrieved sections
+      contextText = sections
+        .map(section => {
+          const title = section.metadata?.heading_path?.join(' > ') || section.metadata?.card || 'Relevant Section';
+          return `## ${title}\n${section.content}`;
+        })
+        .join('\n\n');
+
+      const avgSimilarity = sections.reduce((sum, section) => sum + section.similarity, 0) / sections.length;
+      contextQualityNote = avgSimilarity < 0.6
+        ? "\n\nNOTE: The provided information may have low relevance to the question. Be cautious in your response."
+        : "";
+    } else {
+      contextText = 'No relevant information found.';
+    }
     
     // Format chat history if provided
     let chatHistoryText = '';
@@ -128,12 +137,14 @@ export const PromptService = {
 `;
     }
     
-    // Calculate information completeness rating to help LLM understand context quality
-    // Basic version - could be made more sophisticated
-    const contextCompleteness = PromptService.calculateContextCompleteness(question, sections);
-    const completenessNote = contextCompleteness < 0.7 
-      ? "\n\nNOTE: The provided information may be incomplete for this question. Be explicit about what aspects can be confidently answered based on available information."
-      : "";
+    // Calculate information completeness rating (skip for raw context — full rulebook is always complete)
+    let completenessNote = '';
+    if (!rawContext && sections && sections.length > 0) {
+      const contextCompleteness = PromptService.calculateContextCompleteness(question, sections);
+      completenessNote = contextCompleteness < 0.7
+        ? "\n\nNOTE: The provided information may be incomplete for this question. Be explicit about what aspects can be confidently answered based on available information."
+        : "";
+    }
     
     // Add a conciseness instruction at the top of the prompt
     const conciseInstruction = `
