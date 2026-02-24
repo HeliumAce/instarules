@@ -217,8 +217,12 @@ ${chatHistory?.length ? '6. **Consider Conversation Context:** If this is a foll
    - Low: Limited information or significant parts of the answer require substantial reasoning
 
 9. **Formatting:**
-    * Use bullet points for lists or step-by-step processes.
+    * Structure your response with clear paragraphs separated by blank lines.
+    * Use numbered lists (1. 2. 3.) for sequential steps or ordered items.
+    * Use bullet points (- or *) for unordered lists of related items.
     * **Bold** key game terms, card names, or action names.
+    * When explaining a concept, start with a brief overview paragraph, then use lists or additional paragraphs for details.
+    * Add blank lines between paragraphs and before/after lists for readability.
 
 10. **Exclusions:**
     * Do NOT include phrases like "Based on the information..." or refer to any sources.
