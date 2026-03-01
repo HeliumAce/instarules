@@ -2,7 +2,7 @@ import { useQuery, useMutation, UseQueryResult, UseMutationResult } from '@tanst
 import { getLLMCompletion } from '@/services/LLMService';
 import { fetchGameRules, fetchRelevantSectionsFromVectorDb, findRelevantSections, loadFullRulebookContent } from '@/services/RulesService';
 import { QueryProcessingService } from '@/services/query';
-import { SourceFormattingService } from '@/services/sources';
+import { SourceFormattingService, FullContextSourceService } from '@/services/sources';
 import { extractEntitiesFromHistory, rankEntitiesByRelevance } from '@/services/EntityExtractionService';
 import { gameResponses, getGameConfig } from '@/data/games';
 import { useSupabase } from '@/context/SupabaseContext';
@@ -76,7 +76,16 @@ export function useGameRules(gameId: string): UseGameRulesReturn {
           chatHistory,
         });
         const response = await getLLMCompletion({ prompt });
-        return String(response);
+
+        // Extract sources from the rulebook based on question relevance
+        const sourcesData = FullContextSourceService.findRelevantSources(
+          rulebookContent,
+          question,
+          gameName
+        );
+
+        const enhancedResponse = Object.assign(String(response), { sources: sourcesData });
+        return enhancedResponse;
       }
 
       // ── No data available ──────────────────────────────────────

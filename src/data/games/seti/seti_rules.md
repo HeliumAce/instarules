@@ -181,7 +181,7 @@ Whenever you gain income, you may tuck a card from your hand underneath your sta
 
 ## GAME OVERVIEW (Page 7)
 
-The game is played in 5 rounds. **The player with the starting player marker takes the first turn of the round.** Players take turns in clockwise order, skipping any players that have already passed for the round. At the end of round 5, the final score is calculated and the player with the most points wins.
+The game is played in 5 rounds. The player with the starting player marker takes the first turn of the round. Players take turns in clockwise order, skipping any players that have already passed for the round. At the end of round 5, the final score is calculated and the player with the most points wins
 
 ### TURN STRUCTURE (Page 7)
 
@@ -200,13 +200,13 @@ On your turn, you take **only 1 main action**:
 
 #### FREE ACTIONS (Page 7)
 
-In addition to your main action, there are other things you can do on your turn. These **free actions** are explained in various sidebars throughout this rulebook, and they are summarized on your quick reference sheet. **Free actions** can be performed at any time during your turn – before, after, or even during your main action.
+In addition to your main action, there are other things you can do on your turn. These free actions are explained in various sidebars throughout this rulebook, and they are summarized on your quick reference sheet. Free actions can be performed at any time during your turn – before, after, or even during your main action.
 
 ### ROUND STRUCTURE (Page 7)
 
-Once you have taken your **main action** and any **free actions**, your turn ends. You then need to resolve any **milestones** or **discovered species**. Once you do that, it is the next player's turn.
+Once you have taken your main action and any free actions, your turn ends. You then need to resolve any milestones or discovered species. Once you do that, it is the next player's turn. 
 
-Players will take several turns before running out of things to do. If a player passes for the round, but the others continue taking turns. Once all players have passed, the round is finished and players collect income. The starting player marker moves to the next player who starts the next round.
+Players will take several turns before running out of things to do. If a player passes, that player is done for the round, but the others continue taking turns. Once all players have passed, the round is finished and players collect income. The starting player marker moves to the next player who starts the next round.
 
 ## CARD OVERVIEW (Page 7)
 
@@ -226,9 +226,9 @@ When a card is used, it is used for only one of its benefits. For example, if yo
 
 ## LAUNCH A PROBE (Page 8)
 
-Pay 2 credits to **launch a probe**. Take one of your probe figures, and place it on the Earth space of the solar system board.
+Pay 2 credits to launch a probe. Take one of your probe figures, and place it on the Earth space of the solar system board. 
 
-By default, each player is limited to having one probe in space. If you are at your probe limit, you cannot take the Launch action. ("In space" is anywhere in the rings of the solar system board. By contrast, figures on the planetary board are not "probes in space".)
+By default, each player is limited to having one probe in space. If you are at your probe limit, you cannot take the Launch action. (“In space” is anywhere in the rings of the solar system board. By contrast, figures on the planetary board are not “probes in space”.)
 
 ## MOVEMENT (Page 8)
 
@@ -873,7 +873,7 @@ As usual, the game ends after 5 rounds. You score victory points the same way as
 ## SETUP REMINDERS (Page 28)
 
 - For 3-player games, use the two neutral milestones at 20 and 30 points, with one nonplayer marker on each.
-- For 2-player games, use the two neutral milestones at 20 and 30 points, with two nonplayer marker on each.
+- For 2-player games, use the two neutral milestones at 20 and 30 points, with two nonplayer markers on each.
 - 1 point for the first player, 2 points for the second player, and so on.
 - Take your initial income card and gain resources based on it.
 
