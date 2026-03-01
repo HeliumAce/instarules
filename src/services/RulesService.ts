@@ -187,16 +187,19 @@ export const fetchGameRules = async (gameId: string): Promise<any> => {
  * Uses Vite's ?raw import to load markdown as a string.
  */
 export const loadFullRulebookContent = async (gameId: string): Promise<string> => {
-  const fileId = gameId.replace(/-/g, '_');
-  const modules = import.meta.glob('/src/data/games/**/*_rules.md', { query: '?raw', import: 'default' });
-  const path = `/src/data/games/${gameId}/${fileId}_rules.md`;
-  const loader = modules[path];
+  const modules = import.meta.glob('/src/data/games/**/*.md', { query: '?raw', import: 'default' });
+  const prefix = `/src/data/games/${gameId}/`;
 
-  if (!loader) {
-    throw new Error(`No rulebook found for game: ${gameId} (expected ${path})`);
+  const loaders = Object.entries(modules)
+    .filter(([path]) => path.startsWith(prefix))
+    .sort(([a], [b]) => a.localeCompare(b));
+
+  if (loaders.length === 0) {
+    throw new Error(`No rulebook found for game: ${gameId} (expected markdown files in ${prefix})`);
   }
 
-  return await loader() as string;
+  const contents = await Promise.all(loaders.map(([, loader]) => loader() as Promise<string>));
+  return contents.join('\n\n');
 }
 
 /**
