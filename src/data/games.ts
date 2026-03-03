@@ -24,7 +24,9 @@ export const gameData: Game[] = [
 // Retrieval strategy config per game
 // Games not listed here have no rules data and will use fallback responses
 export const gameRetrievalConfig: Record<string, GameRetrievalConfig> = {
-  'arcs': { strategy: 'vector-search', displayName: 'Arcs' },
+  // Previously 'vector-search' — switched to full-context for better accuracy.
+  // Vector-search code is preserved (commented out) in useGameRules.ts.
+  'arcs': { strategy: 'full-context', displayName: 'Arcs' },
   'brass-lancashire': { strategy: 'full-context', displayName: 'Brass Lancashire' },
   'seti': { strategy: 'full-context', displayName: 'SETI' },
 };
