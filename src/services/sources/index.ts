@@ -10,6 +10,7 @@ export { SourceConversionService } from './SourceConversionService';
 export { SourceDeduplicationService } from './SourceDeduplicationService';
 export { SourceSortingService } from './SourceSortingService';
 export { SourceFormattingService } from './SourceFormattingService';
+export { FullContextSourceService } from './FullContextSourceService';
 
 // Export types
 export type { 
@@ -21,6 +22,10 @@ export type {
 export type {
   MessageSources
 } from './SourceFormattingService';
+
+export type {
+  FullContextMessageSources
+} from './FullContextSourceService';
 
 export type {
   DeduplicationOptions,
