@@ -26,12 +26,19 @@ export const gameData: Game[] = [
 export const gameRetrievalConfig: Record<string, GameRetrievalConfig> = {
   // Previously 'vector-search' — switched to full-context for better accuracy.
   // Vector-search code is preserved (commented out) in useGameRules.ts.
-  'arcs': { strategy: 'full-context', displayName: 'Arcs' },
+  'arcs': {
+    strategy: 'full-context',
+    displayName: 'Arcs',
+    expansions: [
+      { id: 'blighted-reach', displayName: 'Blighted Reach', defaultEnabled: false },
+      { id: 'leaders-and-lore', displayName: 'Leaders & Lore', defaultEnabled: false },
+    ],
+  },
   'brass-lancashire': { strategy: 'full-context', displayName: 'Brass Lancashire' },
   'seti': { strategy: 'full-context', displayName: 'SETI' },
 };
 
-export const getGameConfig = (gameId: string): { strategy: RetrievalStrategy | 'none'; displayName: string } => {
+export const getGameConfig = (gameId: string): GameRetrievalConfig & { strategy: RetrievalStrategy | 'none' } => {
   return gameRetrievalConfig[gameId] ?? { strategy: 'none' as const, displayName: 'Unknown Game' };
 };
 

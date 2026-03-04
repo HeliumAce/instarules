@@ -37,7 +37,7 @@ interface UseGameRulesReturn {
 
 
 
-export function useGameRules(gameId: string): UseGameRulesReturn {
+export function useGameRules(gameId: string, enabledExpansions?: string[]): UseGameRulesReturn {
   // Supabase client — only needed for vector-search strategy (currently disabled).
   // const { supabase } = useSupabase();
 
@@ -71,7 +71,7 @@ export function useGameRules(gameId: string): UseGameRulesReturn {
       // ── Full-context strategy ──────────────────────────────────
       if (gameConfig.strategy === 'full-context') {
         console.log(`[Full-Context] Loading full rulebook for ${gameName}`);
-        const rulebookContent = await loadFullRulebookContent(gameId);
+        const rulebookContent = await loadFullRulebookContent(gameId, enabledExpansions);
 
         const prompt = PromptService.buildPrompt({
           gameName,

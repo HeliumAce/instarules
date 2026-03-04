@@ -1,8 +1,15 @@
 export type RetrievalStrategy = 'vector-search' | 'full-context' | 'hybrid';
 
+export interface ExpansionDefinition {
+  id: string;
+  displayName: string;
+  defaultEnabled: boolean;
+}
+
 export interface GameRetrievalConfig {
   strategy: RetrievalStrategy;
   displayName: string;
+  expansions?: ExpansionDefinition[];
 }
 
 export type Game = {

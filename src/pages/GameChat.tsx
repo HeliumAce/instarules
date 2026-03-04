@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useParams, Navigate } from 'react-router-dom';
-import { Loader2, Trash2 } from 'lucide-react';
+import { Layers, Loader2, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useGameContext } from '@/context/GameContext';
 import { Message, Source, MessageSources } from '@/types/game';
@@ -15,7 +15,10 @@ import { useFeedback } from '@/hooks/useFeedback';
 import { generateSessionId, findUserQuestionForMessage } from './GameChat/utils';
 import { MessageItem } from './GameChat/MessageItem';
 import { SourceModal } from './GameChat/SourceModal';
+import { ExpansionsModal } from './GameChat/ExpansionsModal';
 import { ChatInput } from './GameChat/ChatInput';
+import { useExpansionToggles } from '@/hooks/useExpansionToggles';
+import { getGameConfig } from '@/data/games';
 
 // Define empty sources data locally
 const emptySourcesData: MessageSources = {
@@ -36,8 +39,17 @@ const GameChat = () => {
   const [isTyping, setIsTyping] = useState(false);
   const [selectedSource, setSelectedSource] = useState<Source | null>(null);
   const [isSourceModalOpen, setIsSourceModalOpen] = useState(false);
+  const [isExpansionsModalOpen, setIsExpansionsModalOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const { rulesQuery, askMutation, getFallbackResponse } = useGameRules(gameId || '');
+  const gameConfig = getGameConfig(gameId || '');
+  const expansions = gameConfig.expansions ?? [];
+  const hasExpansions = expansions.length > 0;
+  const { enabledExpansions, toggleExpansion, isExpansionEnabled } =
+    useExpansionToggles(gameId || '', expansions);
+  const { rulesQuery, askMutation, getFallbackResponse } = useGameRules(
+    gameId || '',
+    hasExpansions ? enabledExpansions : undefined
+  );
   const { messages, loading: messagesLoading, error: messagesError, saveMessage, clearMessages } = useChatMessages(gameId || '');
   // Use the useFeedback hook for centralized state management
   const { feedbackState, submitFeedback, isLoading: feedbackLoading } = useFeedback(gameId || '');
@@ -212,20 +224,33 @@ const GameChat = () => {
     <div className="flex h-screen flex-col">
       <header className="border-b border-border bg-background p-4 flex justify-between items-center">
         <h1 className="text-xl font-semibold text-white">{game.title} Rules</h1>
-        <Button 
-          variant="destructive" 
-          size="sm"
-          onClick={handleClear}
-          disabled={isClearing || messagesLoading || isAsking}
-          className="flex items-center gap-2"
-        >
-          {isClearing ? (
-            <Loader2 size={16} className="animate-spin" />
-          ) : (
-            <Trash2 size={16} />
+        <div className="flex items-center gap-2">
+          {hasExpansions && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsExpansionsModalOpen(true)}
+              className="flex items-center gap-2"
+            >
+              <Layers size={16} />
+              Expansions
+            </Button>
           )}
-          Clear Chat
-        </Button>
+          <Button
+            variant="destructive"
+            size="sm"
+            onClick={handleClear}
+            disabled={isClearing || messagesLoading || isAsking}
+            className="flex items-center gap-2"
+          >
+            {isClearing ? (
+              <Loader2 size={16} className="animate-spin" />
+            ) : (
+              <Trash2 size={16} />
+            )}
+            Clear Chat
+          </Button>
+        </div>
       </header>
 
       <div className="flex-1 overflow-y-auto">
@@ -303,6 +328,17 @@ const GameChat = () => {
           setSelectedSource(null);
         }}
       />
+
+      {/* Expansions Modal */}
+      {hasExpansions && (
+        <ExpansionsModal
+          expansions={expansions}
+          isOpen={isExpansionsModalOpen}
+          onClose={() => setIsExpansionsModalOpen(false)}
+          isExpansionEnabled={isExpansionEnabled}
+          onToggle={toggleExpansion}
+        />
+      )}
     </div>
   );
 };
