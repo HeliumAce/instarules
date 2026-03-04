@@ -26,6 +26,8 @@ layer(base);
   --color-destructive: hsl(var(--destructive));
   --color-destructive-foreground: hsl(var(--destructive-foreground));
 
+  --color-success: hsl(var(--success));
+
   --color-muted: hsl(var(--muted));
   --color-muted-foreground: hsl(var(--muted-foreground));
 
@@ -230,6 +232,9 @@ layer(base);
     --accent: 96 100% 13%;
     /* White text on accent backgrounds */
     --accent-foreground: 0 0% 98%;
+
+    /* Green text color for confirmations and status messages */
+    --success: 96 60% 45%;
 
     /* Red color for delete/warning actions */
     --destructive: 0 84% 60%;

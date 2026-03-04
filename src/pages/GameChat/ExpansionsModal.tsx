@@ -1,41 +1,44 @@
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
+import { ToggleLeft } from 'lucide-react';
 import { ExpansionDefinition } from '@/types/game';
 
-interface ExpansionsModalProps {
+interface ExpansionsPopoverProps {
   expansions: ExpansionDefinition[];
-  isOpen: boolean;
-  onClose: () => void;
   isExpansionEnabled: (id: string) => boolean;
   onToggle: (id: string) => void;
 }
 
-export function ExpansionsModal({
+export function ExpansionsPopover({
   expansions,
-  isOpen,
-  onClose,
   isExpansionEnabled,
   onToggle,
-}: ExpansionsModalProps) {
+}: ExpansionsPopoverProps) {
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-sm">
-        <DialogHeader>
-          <DialogTitle>Expansions</DialogTitle>
-        </DialogHeader>
-
-        <div className="space-y-4 py-2">
-          <div className="flex items-center justify-between">
-            <Label className="text-sm font-medium">Base Game</Label>
-            <Switch checked disabled aria-label="Base game always enabled" />
-          </div>
-
-          <hr className="border-border" />
-
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          size="sm"
+          className="flex items-center gap-2"
+        >
+          <ToggleLeft size={16} />
+          Expansions
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent align="end" className="w-64 p-0">
+        <div className="px-3 py-2.5 border-b border-border">
+          <p className="text-sm font-semibold text-muted-foreground">Expansions</p>
+        </div>
+        <div className="p-3 space-y-3">
           {expansions.map(expansion => (
             <div key={expansion.id} className="flex items-center justify-between">
-              <Label htmlFor={`exp-${expansion.id}`} className="text-sm font-medium cursor-pointer">
+              <Label
+                htmlFor={`exp-${expansion.id}`}
+                className="text-sm text-muted-foreground cursor-pointer"
+              >
                 {expansion.displayName}
               </Label>
               <Switch
@@ -43,11 +46,12 @@ export function ExpansionsModal({
                 checked={isExpansionEnabled(expansion.id)}
                 onCheckedChange={() => onToggle(expansion.id)}
                 aria-label={`Toggle ${expansion.displayName}`}
+                className="data-[state=unchecked]:bg-muted-foreground"
               />
             </div>
           ))}
         </div>
-      </DialogContent>
-    </Dialog>
+      </PopoverContent>
+    </Popover>
   );
 }

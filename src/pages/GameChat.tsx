@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useParams, Navigate } from 'react-router-dom';
-import { Check, Layers, Loader2, Trash2, X } from 'lucide-react';
+import { Check, Loader2, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useGameContext } from '@/context/GameContext';
 import { Message, Source, MessageSources } from '@/types/game';
@@ -15,7 +15,7 @@ import { useFeedback } from '@/hooks/useFeedback';
 import { generateSessionId, findUserQuestionForMessage } from './GameChat/utils';
 import { MessageItem } from './GameChat/MessageItem';
 import { SourceModal } from './GameChat/SourceModal';
-import { ExpansionsModal } from './GameChat/ExpansionsModal';
+import { ExpansionsPopover } from './GameChat/ExpansionsModal';
 import { ChatInput } from './GameChat/ChatInput';
 import { useExpansionToggles } from '@/hooks/useExpansionToggles';
 import { getGameConfig } from '@/data/games';
@@ -50,7 +50,6 @@ const GameChat = () => {
   const [isTyping, setIsTyping] = useState(false);
   const [selectedSource, setSelectedSource] = useState<Source | null>(null);
   const [isSourceModalOpen, setIsSourceModalOpen] = useState(false);
-  const [isExpansionsModalOpen, setIsExpansionsModalOpen] = useState(false);
   const [statusMessages, setStatusMessages] = useState<StatusMessage[]>([]);
   const contextCutoffRef = useRef<Date | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -258,15 +257,11 @@ const GameChat = () => {
         <h1 className="text-xl font-semibold text-white">{game.title} Rules</h1>
         <div className="flex items-center gap-2">
           {hasExpansions && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setIsExpansionsModalOpen(true)}
-              className="flex items-center gap-2"
-            >
-              <Layers size={16} />
-              Expansions
-            </Button>
+            <ExpansionsPopover
+              expansions={expansions}
+              isExpansionEnabled={isExpansionEnabled}
+              onToggle={handleExpansionToggle}
+            />
           )}
           <Button
             variant="destructive"
@@ -325,12 +320,8 @@ const GameChat = () => {
                     if (item.type === 'status') {
                       return (
                         <div key={item.status.id} className="flex items-center gap-2 py-2 px-3">
-                          {item.status.enabled ? (
-                            <Check size={14} className="text-emerald-400 shrink-0" />
-                          ) : (
-                            <X size={14} className="text-amber-400 shrink-0" />
-                          )}
-                          <span className={`text-sm ${item.status.enabled ? 'text-emerald-400' : 'text-amber-400'}`}>
+                          <Check size={14} className="text-success shrink-0" />
+                          <span className="text-sm text-success">
                             {item.status.content}
                           </span>
                         </div>
@@ -388,16 +379,6 @@ const GameChat = () => {
         }}
       />
 
-      {/* Expansions Modal */}
-      {hasExpansions && (
-        <ExpansionsModal
-          expansions={expansions}
-          isOpen={isExpansionsModalOpen}
-          onClose={() => setIsExpansionsModalOpen(false)}
-          isExpansionEnabled={isExpansionEnabled}
-          onToggle={handleExpansionToggle}
-        />
-      )}
     </div>
   );
 };
