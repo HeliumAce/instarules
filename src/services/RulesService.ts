@@ -186,12 +186,23 @@ export const fetchGameRules = async (gameId: string): Promise<any> => {
  * Loads the full rulebook content for games using the 'full-context' or 'hybrid' strategy.
  * Uses Vite's ?raw import to load markdown as a string.
  */
-export const loadFullRulebookContent = async (gameId: string): Promise<string> => {
+export const loadFullRulebookContent = async (
+  gameId: string,
+  enabledExpansions?: string[]
+): Promise<string> => {
   const modules = import.meta.glob('/src/data/games/**/*.md', { query: '?raw', import: 'default' });
   const prefix = `/src/data/games/${gameId}/`;
 
   const loaders = Object.entries(modules)
-    .filter(([path]) => path.startsWith(prefix))
+    .filter(([path]) => {
+      if (!path.startsWith(prefix)) return false;
+      // If no expansions defined, load everything (backwards-compatible)
+      if (enabledExpansions === undefined) return true;
+      // Otherwise only load base/ + enabled expansion subdirectories
+      const relativePath = path.slice(prefix.length);
+      const dir = relativePath.split('/')[0];
+      return dir === 'base' || enabledExpansions.includes(dir);
+    })
     .sort(([a], [b]) => a.localeCompare(b));
 
   if (loaders.length === 0) {

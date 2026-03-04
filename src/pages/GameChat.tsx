@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useParams, Navigate } from 'react-router-dom';
-import { Loader2, Trash2 } from 'lucide-react';
+import { Check, Loader2, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useGameContext } from '@/context/GameContext';
 import { Message, Source, MessageSources } from '@/types/game';
@@ -15,13 +15,27 @@ import { useFeedback } from '@/hooks/useFeedback';
 import { generateSessionId, findUserQuestionForMessage } from './GameChat/utils';
 import { MessageItem } from './GameChat/MessageItem';
 import { SourceModal } from './GameChat/SourceModal';
+import { ExpansionsPopover } from './GameChat/ExpansionsModal';
 import { ChatInput } from './GameChat/ChatInput';
+import { useExpansionToggles } from '@/hooks/useExpansionToggles';
+import { getGameConfig } from '@/data/games';
 
 // Define empty sources data locally
 const emptySourcesData: MessageSources = {
   count: 0,
   sources: []
 };
+
+interface StatusMessage {
+  id: string;
+  content: string;
+  timestamp: Date;
+  enabled: boolean;
+}
+
+type DisplayItem =
+  | { type: 'message'; message: Message }
+  | { type: 'status'; status: StatusMessage };
 
 
 
@@ -36,8 +50,18 @@ const GameChat = () => {
   const [isTyping, setIsTyping] = useState(false);
   const [selectedSource, setSelectedSource] = useState<Source | null>(null);
   const [isSourceModalOpen, setIsSourceModalOpen] = useState(false);
+  const [statusMessages, setStatusMessages] = useState<StatusMessage[]>([]);
+  const contextCutoffRef = useRef<Date | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const { rulesQuery, askMutation, getFallbackResponse } = useGameRules(gameId || '');
+  const gameConfig = getGameConfig(gameId || '');
+  const expansions = gameConfig.expansions ?? [];
+  const hasExpansions = expansions.length > 0;
+  const { enabledExpansions, toggleExpansion, isExpansionEnabled } =
+    useExpansionToggles(gameId || '', expansions);
+  const { rulesQuery, askMutation, getFallbackResponse } = useGameRules(
+    gameId || '',
+    hasExpansions ? enabledExpansions : undefined
+  );
   const { messages, loading: messagesLoading, error: messagesError, saveMessage, clearMessages } = useChatMessages(gameId || '');
   // Use the useFeedback hook for centralized state management
   const { feedbackState, submitFeedback, isLoading: feedbackLoading } = useFeedback(gameId || '');
@@ -46,7 +70,7 @@ const GameChat = () => {
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages]);
+  }, [messages, statusMessages]);
 
   if (!game) {
     return <Navigate to="/" />;
@@ -60,6 +84,19 @@ const GameChat = () => {
     console.log('Source clicked:', source);
     setSelectedSource(source);
     setIsSourceModalOpen(true);
+  };
+
+  const handleExpansionToggle = (expansionId: string) => {
+    const expansion = expansions.find(e => e.id === expansionId);
+    const willBeEnabled = !isExpansionEnabled(expansionId);
+    toggleExpansion(expansionId);
+    contextCutoffRef.current = new Date();
+    setStatusMessages(prev => [...prev, {
+      id: crypto.randomUUID(),
+      content: `${expansion?.displayName} expansion has been ${willBeEnabled ? 'enabled' : 'disabled'}`,
+      timestamp: new Date(),
+      enabled: willBeEnabled,
+    }]);
   };
 
   const scrollToBottom = () => {
@@ -105,8 +142,12 @@ const GameChat = () => {
     setIsTyping(true);
 
     // Create chat history from existing messages
-    // Only include the last few messages to keep context reasonable
-    const chatHistory = messages.slice(-6).map(msg => ({
+    // Only include messages after the last expansion toggle to avoid stale context
+    const cutoff = contextCutoffRef.current;
+    const relevantMessages = cutoff
+      ? messages.filter(m => m.timestamp > cutoff)
+      : messages;
+    const chatHistory = relevantMessages.slice(-6).map(msg => ({
       content: msg.content,
       isUser: msg.isUser
     }));
@@ -127,6 +168,8 @@ const GameChat = () => {
     try {
       setIsClearing(true);
       await clearMessages();
+      setStatusMessages([]);
+      contextCutoffRef.current = null;
       askMutation.reset();
     } catch (error) {
       console.error('Error clearing messages:', error);
@@ -212,20 +255,29 @@ const GameChat = () => {
     <div className="flex h-screen flex-col">
       <header className="border-b border-border bg-background p-4 flex justify-between items-center">
         <h1 className="text-xl font-semibold text-white">{game.title} Rules</h1>
-        <Button 
-          variant="destructive" 
-          size="sm"
-          onClick={handleClear}
-          disabled={isClearing || messagesLoading || isAsking}
-          className="flex items-center gap-2"
-        >
-          {isClearing ? (
-            <Loader2 size={16} className="animate-spin" />
-          ) : (
-            <Trash2 size={16} />
+        <div className="flex items-center gap-2">
+          {hasExpansions && (
+            <ExpansionsPopover
+              expansions={expansions}
+              isExpansionEnabled={isExpansionEnabled}
+              onToggle={handleExpansionToggle}
+            />
           )}
-          Clear Chat
-        </Button>
+          <Button
+            variant="destructive"
+            size="sm"
+            onClick={handleClear}
+            disabled={isClearing || messagesLoading || isAsking}
+            className="flex items-center gap-2"
+          >
+            {isClearing ? (
+              <Loader2 size={16} className="animate-spin" />
+            ) : (
+              <Trash2 size={16} />
+            )}
+            Clear Chat
+          </Button>
+        </div>
       </header>
 
       <div className="flex-1 overflow-y-auto">
@@ -254,16 +306,39 @@ const GameChat = () => {
               </div>
             ) : (
               <>
-                {messages.map((message) => (
-                  <MessageItem
-                    key={message.id}
-                    message={message}
-                    feedbackState={feedbackState}
-                    onFeedback={handleFeedback}
-                    onSourceClick={handleSourceClick}
-                    emptySourcesData={emptySourcesData}
-                  />
-                ))}
+                {(() => {
+                  const displayItems: DisplayItem[] = [
+                    ...messages.map(m => ({ type: 'message' as const, message: m })),
+                    ...statusMessages.map(s => ({ type: 'status' as const, status: s })),
+                  ].sort((a, b) => {
+                    const tA = a.type === 'message' ? a.message.timestamp : a.status.timestamp;
+                    const tB = b.type === 'message' ? b.message.timestamp : b.status.timestamp;
+                    return tA.getTime() - tB.getTime();
+                  });
+
+                  return displayItems.map(item => {
+                    if (item.type === 'status') {
+                      return (
+                        <div key={item.status.id} className="flex items-center gap-2 py-2 px-3">
+                          <Check size={14} className="text-success shrink-0" />
+                          <span className="text-sm text-success">
+                            {item.status.content}
+                          </span>
+                        </div>
+                      );
+                    }
+                    return (
+                      <MessageItem
+                        key={item.message.id}
+                        message={item.message}
+                        feedbackState={feedbackState}
+                        onFeedback={handleFeedback}
+                        onSourceClick={handleSourceClick}
+                        emptySourcesData={emptySourcesData}
+                      />
+                    );
+                  });
+                })()}
               </>
             )}
             
@@ -303,6 +378,7 @@ const GameChat = () => {
           setSelectedSource(null);
         }}
       />
+
     </div>
   );
 };
